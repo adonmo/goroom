@@ -10,6 +10,7 @@ import (
 
 //Product Buy
 type Product struct {
+	gorm.Model
 	Code  string
 	Price uint
 }
