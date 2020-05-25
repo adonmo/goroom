@@ -54,12 +54,15 @@ func (room *Room) Init() error {
 		return err
 	}
 
+	applicableMigrations, err := GetApplicableMigrations(room.Migrations, roomMetadata.Version, room.Version)
+	if err != nil {
+		return err
+	}
+
 	if room.Version == roomMetadata.Version {
 		err = room.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
-	} else if room.Version > roomMetadata.Version {
-		err = room.performUpgrade(currentIdentityHash)
 	} else {
-		err = room.performDowngrade(currentIdentityHash)
+		room.performMigrations(applicableMigrations)
 	}
 
 	return err
@@ -167,10 +170,9 @@ func (room *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMet
 	return nil
 }
 
-func (room *Room) performUpgrade(currentIdentityHash string) error {
-	return nil
-}
-
-func (room *Room) performDowngrade(currentIdentityHash string) error {
+func (room *Room) performMigrations(applicableMigrations []Migration) error {
+	for _, migration := range applicableMigrations {
+		migration.Apply()
+	}
 	return nil
 }
