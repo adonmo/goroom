@@ -14,11 +14,11 @@ type VersionNumber int
 
 //Room Tracks the database objects, properties and configuration
 type Room struct {
-	Entities   []interface{}
-	DBFilePath string
-	Version    VersionNumber
-	Migrations []Migration
-	DB         *gorm.DB
+	Entities                       []interface{}
+	DBFilePath                     string
+	Version                        VersionNumber
+	Migrations                     []Migration
+	FallbackToDestructiveMigration bool
 }
 
 //GoRoomSchemaMaster Tracks the schema of entities against current version of DB
@@ -27,12 +27,25 @@ type GoRoomSchemaMaster struct {
 	IdentityHash string
 }
 
-//Init Initialize Room Database
-func (room *Room) Init() error {
+//GetDB Returns Database object to be used by the application
+func (room *Room) GetDB() (*gorm.DB, error) {
 	sqliteDB, err := room.getSqliteDB()
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	err = room.initRoomDB(sqliteDB)
+	if err != nil && room.FallbackToDestructiveMigration {
+		room.wipeOutExistingDB(sqliteDB)
+		err = room.initRoomDB(sqliteDB)
+	}
+
+	return sqliteDB, err
+}
+
+//Init Initialize Room Database
+func (room *Room) initRoomDB(sqliteDB *gorm.DB) error {
+
 	if !room.isSchemaMasterPresent(sqliteDB) {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
 		err := room.runFirstTimeDBCreation(sqliteDB)
@@ -62,7 +75,7 @@ func (room *Room) Init() error {
 	if room.Version == roomMetadata.Version {
 		err = room.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
 	} else {
-		room.performMigrations(applicableMigrations)
+		room.performMigrations(sqliteDB, currentIdentityHash, applicableMigrations)
 	}
 
 	return err
@@ -144,6 +157,11 @@ func (room *Room) runFirstTimeDBCreation(db *gorm.DB) error {
 }
 
 func (room *Room) wipeOutExistingDB(db *gorm.DB) {
+
+	if room.isSchemaMasterPresent(db) {
+		db.DropTable(GoRoomSchemaMaster{})
+	}
+
 	for _, entity := range room.Entities {
 		if db.HasTable(entity) {
 			db.DropTable(entity)
@@ -170,9 +188,26 @@ func (room *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMet
 	return nil
 }
 
-func (room *Room) performMigrations(applicableMigrations []Migration) error {
+func (room *Room) performMigrations(db *gorm.DB, currentIdentityHash string, applicableMigrations []Migration) error {
 	for _, migration := range applicableMigrations {
 		migration.Apply()
+	}
+
+	dbExec := db.Delete(GoRoomSchemaMaster{})
+	if dbExec.Error != nil {
+		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
+		return dbExec.Error
+	}
+
+	metadata := GoRoomSchemaMaster{
+		Version:      room.Version,
+		IdentityHash: currentIdentityHash,
+	}
+
+	dbExec = db.Create(&metadata)
+	if dbExec.Error != nil {
+		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
+		return dbExec.Error
 	}
 	return nil
 }
