@@ -21,13 +21,6 @@ type Room struct {
 	DB         *gorm.DB
 }
 
-//Migration Interface against users can define their migrations on the DB
-type Migration interface {
-	GetBaseVersion() VersionNumber
-	GetTargetVersion() VersionNumber
-	Apply() error
-}
-
 //GoRoomSchemaMaster Tracks the schema of entities against current version of DB
 type GoRoomSchemaMaster struct {
 	Version      VersionNumber `gorm:"primary_key"`
@@ -101,9 +94,9 @@ func (room *Room) calculateIdentityHash(db *gorm.DB) (string, error) {
 	var entityHashArr []string
 	var sortedEntities []interface{}
 	copy(sortedEntities, room.Entities)
-	sort.Slice(room.Entities[:], func(i, j int) bool {
-		modelA := db.NewScope(room.Entities[i]).GetModelStruct()
-		modelB := db.NewScope(room.Entities[j]).GetModelStruct()
+	sort.Slice(sortedEntities[:], func(i, j int) bool {
+		modelA := db.NewScope(sortedEntities[i]).GetModelStruct()
+		modelB := db.NewScope(sortedEntities[j]).GetModelStruct()
 
 		return modelA.ModelType.Name() < modelB.ModelType.Name()
 	})
