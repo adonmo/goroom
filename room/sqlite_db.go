@@ -7,29 +7,29 @@ import (
 	"github.com/jinzhu/gorm"
 )
 
-func (room *Room) getSqliteDB() (*gorm.DB, error) {
-	db, err := gorm.Open("sqlite3", room.dbFilePath)
+func (appDB *Room) getSqliteDB() (*gorm.DB, error) {
+	db, err := gorm.Open("sqlite3", appDB.dbFilePath)
 	if err != nil {
-		return nil, fmt.Errorf("Unable to open Database at the given file path %v", room.dbFilePath)
+		return nil, fmt.Errorf("Unable to open Database at the given file path %v", appDB.dbFilePath)
 	}
 
 	return db, nil
 }
 
-func (room *Room) runFirstTimeDBCreation() error {
-	identityHash, err := room.calculateIdentityHash()
+func (appDB *Room) runFirstTimeDBCreation() error {
+	identityHash, err := appDB.calculateIdentityHash()
 	if err != nil {
 		return err
 	}
-	room.createSchemaMaster()
-	room.createEntities()
+	appDB.createSchemaMaster()
+	appDB.createEntities()
 
 	metadata := GoRoomSchemaMaster{
-		Version:      room.version,
+		Version:      appDB.version,
 		IdentityHash: identityHash,
 	}
 
-	dbExec := room.orm.Create(&metadata)
+	dbExec := appDB.orm.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
@@ -38,25 +38,25 @@ func (room *Room) runFirstTimeDBCreation() error {
 	return nil
 }
 
-func (room *Room) wipeOutExistingDB() {
+func (appDB *Room) wipeOutExistingDB() {
 
-	if room.isSchemaMasterPresent() {
-		room.orm.DropTable(GoRoomSchemaMaster{})
+	if appDB.isSchemaMasterPresent() {
+		appDB.orm.DropTable(GoRoomSchemaMaster{})
 	}
 
-	for _, entity := range room.entities {
-		if room.orm.HasTable(entity) {
-			room.orm.DropTable(entity)
+	for _, entity := range appDB.entities {
+		if appDB.orm.HasTable(entity) {
+			appDB.orm.DropTable(entity)
 		}
 	}
 
-	room.orm = nil
+	appDB.orm = nil
 }
 
-func (room *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {
+func (appDB *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {
 	if currentIdentityHash != roomMetadata.IdentityHash {
 		logger.Error("Database Hash does not match. Looks like you changed entity definitions but forgot to upgrade version.")
-		return fmt.Errorf("Database signature mismatch. Version %v", room.version)
+		return fmt.Errorf("Database signature mismatch. Version %v", appDB.version)
 	}
 
 	return nil

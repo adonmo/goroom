@@ -74,23 +74,23 @@ func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
 	return migrationMap
 }
 
-func (room *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
+func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
 	for _, migration := range applicableMigrations {
-		migration.Apply(room.orm.GetUnderlyingORM())
+		migration.Apply(appDB.orm.GetUnderlyingORM())
 	}
 
-	dbExec := room.orm.Delete(GoRoomSchemaMaster{})
+	dbExec := appDB.orm.Delete(GoRoomSchemaMaster{})
 	if dbExec.Error != nil {
 		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
 	}
 
 	metadata := GoRoomSchemaMaster{
-		Version:      room.version,
+		Version:      appDB.version,
 		IdentityHash: currentIdentityHash,
 	}
 
-	dbExec = room.orm.Create(&metadata)
+	dbExec = appDB.orm.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error

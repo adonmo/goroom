@@ -47,34 +47,34 @@ func New(entities []interface{}, dbFilePath string, version VersionNumber, migra
 }
 
 //GetDB Returns Database object to be used by the application
-func (room *Room) GetDB() (*gorm.DB, error) {
-	sqliteDB, err := room.getSqliteDB()
+func (appDB *Room) GetDB() (*gorm.DB, error) {
+	sqliteDB, err := appDB.getSqliteDB()
 	if err != nil {
 		return nil, err
 	}
 
 	ormAdapter := orm.NewGORM(sqliteDB)
-	err = room.initRoomDB(ormAdapter)
-	if err != nil && room.fallbackToDestructiveMigration {
-		room.wipeOutExistingDB()
-		err = room.initRoomDB(ormAdapter)
+	err = appDB.initRoomDB(ormAdapter)
+	if err != nil && appDB.fallbackToDestructiveMigration {
+		appDB.wipeOutExistingDB()
+		err = appDB.initRoomDB(ormAdapter)
 	}
 
-	return room.orm.GetUnderlyingORM().(*gorm.DB), err
+	return appDB.orm.GetUnderlyingORM().(*gorm.DB), err
 }
 
 //Init Initialize Room Database
-func (room *Room) initRoomDB(orm orm.ORM) (err error) {
+func (appDB *Room) initRoomDB(orm orm.ORM) (err error) {
 	defer func() {
 		if err != nil {
-			room.orm = nil
+			appDB.orm = nil
 		}
 	}()
 
-	room.orm = orm
-	if !room.isSchemaMasterPresent() {
+	appDB.orm = orm
+	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
-		err = room.runFirstTimeDBCreation()
+		err = appDB.runFirstTimeDBCreation()
 		if err != nil {
 			logger.Errorf("Unable to Initialize Room. Unexpected Error. %v", err)
 			return err
@@ -82,26 +82,26 @@ func (room *Room) initRoomDB(orm orm.ORM) (err error) {
 		return nil
 	}
 
-	roomMetadata, err := room.getRoomMetadataFromDB()
+	roomMetadata, err := appDB.getRoomMetadataFromDB()
 	if err != nil {
 		logger.Error("Unable to fetch metadata although room master exists. This could be a sign of database corruption.")
 		return err
 	}
-	currentIdentityHash, err := room.calculateIdentityHash()
+	currentIdentityHash, err := appDB.calculateIdentityHash()
 	if err != nil {
 		logger.Errorf("Error while calculating signature of current Entity collection. %v", err)
 		return err
 	}
 
-	applicableMigrations, err := GetApplicableMigrations(room.migrations, roomMetadata.Version, room.version)
+	applicableMigrations, err := GetApplicableMigrations(appDB.migrations, roomMetadata.Version, appDB.version)
 	if err != nil {
 		return err
 	}
 
-	if room.version == roomMetadata.Version {
-		err = room.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
+	if appDB.version == roomMetadata.Version {
+		err = appDB.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
 	} else {
-		room.performMigrations(currentIdentityHash, applicableMigrations)
+		appDB.performMigrations(currentIdentityHash, applicableMigrations)
 	}
 
 	return err
