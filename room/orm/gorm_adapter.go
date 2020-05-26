@@ -1,27 +1,6 @@
-package room
+package orm
 
 import "github.com/jinzhu/gorm"
-
-//ORM The orm component used by Room
-type ORM interface {
-	HasTable(value interface{}) bool
-	CreateTable(models ...interface{}) ORM
-	Delete(value interface{}, where ...interface{}) ORM
-	Create(value interface{}) ORM
-	DropTable(values ...interface{}) ORM
-	GetModelDefinition(entity interface{}) ModelDefinition
-}
-
-//ModelDefinition Interface to access Definition of ORM Entity Model
-type ModelDefinition struct {
-	TableName   string
-	EntityModel interface{}
-}
-
-//Result Result from DB operations
-type Result struct {
-	Error error
-}
 
 //GORMAdapter Adpater for GORM as used by Room
 type GORMAdapter struct {
