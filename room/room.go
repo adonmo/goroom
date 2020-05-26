@@ -70,7 +70,7 @@ func (room *Room) initRoomDB(db *gorm.DB) (err error) {
 		}
 	}()
 
-	room.db = orm.New(db)
+	room.db = orm.NewGORM(db)
 	if !room.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
 		err = room.runFirstTimeDBCreation()

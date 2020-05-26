@@ -7,8 +7,8 @@ type GORMAdapter struct {
 	db *gorm.DB
 }
 
-//New Returns a new GORMAdapter
-func New(db *gorm.DB) ORM {
+//NewGORM Returns a new GORMAdapter
+func NewGORM(db *gorm.DB) ORM {
 	return &GORMAdapter{
 		db: db,
 	}
