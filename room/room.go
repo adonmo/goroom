@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"adonmo.com/goroom/logger"
+	"adonmo.com/goroom/room/orm"
 	"github.com/jinzhu/gorm"
 )
 
@@ -17,7 +18,7 @@ type Room struct {
 	version                        VersionNumber
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
-	db                             *gorm.DB
+	db                             orm.ORM
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
@@ -58,7 +59,7 @@ func (room *Room) GetDB() (*gorm.DB, error) {
 		err = room.initRoomDB(sqliteDB)
 	}
 
-	return room.db, err
+	return room.db.GetUnderlyingORM().(*gorm.DB), err
 }
 
 //Init Initialize Room Database
@@ -69,7 +70,7 @@ func (room *Room) initRoomDB(db *gorm.DB) (err error) {
 		}
 	}()
 
-	room.db = db
+	room.db = orm.New(db)
 	if !room.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
 		err = room.runFirstTimeDBCreation()

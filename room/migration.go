@@ -5,14 +5,14 @@ import (
 	"sort"
 
 	"adonmo.com/goroom/logger"
-	"github.com/jinzhu/gorm"
+	"adonmo.com/goroom/room/orm"
 )
 
 //Migration Interface against users can define their migrations on the DB
 type Migration interface {
 	GetBaseVersion() VersionNumber
 	GetTargetVersion() VersionNumber
-	Apply(db *gorm.DB) error
+	Apply(orm orm.ORM) error
 }
 
 //GetApplicableMigrations Fetches applicable migrations based on src and destination version numbers

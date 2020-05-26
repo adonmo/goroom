@@ -8,6 +8,8 @@ type ORM interface {
 	Create(value interface{}) Result
 	DropTable(values ...interface{}) Result
 	GetModelDefinition(entity interface{}) ModelDefinition
+	GetUnderlyingORM() interface{}
+	QueryLatest(entity interface{}, orderByColumnName string, orderByType string) (result interface{}, err error)
 }
 
 //ModelDefinition Interface to access Definition of ORM Entity Model

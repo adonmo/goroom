@@ -7,13 +7,20 @@ type GORMAdapter struct {
 	db *gorm.DB
 }
 
+//New Returns a new GORMAdapter
+func New(db *gorm.DB) ORM {
+	return &GORMAdapter{
+		db: db,
+	}
+}
+
 //HasTable Check Table exists
 func (adapter *GORMAdapter) HasTable(value interface{}) bool {
 	return adapter.db.HasTable(value)
 }
 
 //CreateTable Create a Table
-func (adapter *GORMAdapter) CreateTable(value interface{}) Result {
+func (adapter *GORMAdapter) CreateTable(value ...interface{}) Result {
 	return Result{
 		Error: adapter.db.CreateTable(value).Error,
 	}
@@ -47,4 +54,21 @@ func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) ModelDefiniti
 		EntityModel: model,
 		TableName:   model.TableName(adapter.db),
 	}
+}
+
+//GetUnderlyingORM Get the underlying ORM for advanced usage
+func (adapter *GORMAdapter) GetUnderlyingORM() interface{} {
+	return adapter.db
+}
+
+//QueryLatest Query the latest entry from database table
+func (adapter *GORMAdapter) QueryLatest(entity interface{}, orderByColumnName string, orderByType string) (result interface{}, err error) {
+	dbExec := adapter.db.Order(orderByColumnName + " " + orderByType).First(entity)
+	if dbExec.Error != nil {
+		err = dbExec.Error
+	} else {
+		result = entity
+	}
+
+	return
 }

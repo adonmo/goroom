@@ -20,17 +20,17 @@ func (room *Room) calculateIdentityHash() (string, error) {
 	var sortedEntities []interface{}
 	copy(sortedEntities, room.entities)
 	sort.Slice(sortedEntities[:], func(i, j int) bool {
-		modelA := room.db.NewScope(sortedEntities[i]).GetModelStruct()
-		modelB := room.db.NewScope(sortedEntities[j]).GetModelStruct()
+		modelA := room.db.GetModelDefinition(sortedEntities[i])
+		modelB := room.db.GetModelDefinition(sortedEntities[j])
 
-		return modelA.ModelType.Name() < modelB.ModelType.Name()
+		return modelA.TableName < modelB.TableName
 	})
 
 	for _, entity := range sortedEntities {
-		model := room.db.NewScope(entity).GetModelStruct()
+		model := room.db.GetModelDefinition(entity)
 		sum, err := deephash.ConstructHash(model)
 		if err != nil {
-			return "", fmt.Errorf("Error while calculating identity hash for Table %v", model.ModelType.Name())
+			return "", fmt.Errorf("Error while calculating identity hash for Table %v", model.TableName)
 		}
 		entityHashArr = append(entityHashArr, sum)
 	}

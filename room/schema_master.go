@@ -18,10 +18,10 @@ func (room *Room) createSchemaMaster() {
 
 func (room *Room) getRoomMetadataFromDB() (*GoRoomSchemaMaster, error) {
 	var roomMetadata GoRoomSchemaMaster
-	dbExec := room.db.Order("version DESC").First(&roomMetadata)
-	if dbExec.Error != nil {
-		logger.Errorf("Error while fetching room metadata from the DB. %v", dbExec.Error)
-		return nil, dbExec.Error
+	result, err := room.db.QueryLatest(&roomMetadata, "version", "DESC")
+	if err != nil {
+		logger.Errorf("Error while fetching room metadata from the DB. %v", err)
+		return nil, err
 	}
-	return &roomMetadata, nil
+	return result.(*GoRoomSchemaMaster), nil
 }
