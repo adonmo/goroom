@@ -9,8 +9,8 @@ import (
 
 func (room *Room) createEntities() {
 	for _, entity := range room.entities {
-		if !room.db.HasTable(entity) {
-			room.db.CreateTable(entity)
+		if !room.orm.HasTable(entity) {
+			room.orm.CreateTable(entity)
 		}
 	}
 }
@@ -20,14 +20,14 @@ func (room *Room) calculateIdentityHash() (string, error) {
 	var sortedEntities []interface{}
 	copy(sortedEntities, room.entities)
 	sort.Slice(sortedEntities[:], func(i, j int) bool {
-		modelA := room.db.GetModelDefinition(sortedEntities[i])
-		modelB := room.db.GetModelDefinition(sortedEntities[j])
+		modelA := room.orm.GetModelDefinition(sortedEntities[i])
+		modelB := room.orm.GetModelDefinition(sortedEntities[j])
 
 		return modelA.TableName < modelB.TableName
 	})
 
 	for _, entity := range sortedEntities {
-		model := room.db.GetModelDefinition(entity)
+		model := room.orm.GetModelDefinition(entity)
 		sum, err := deephash.ConstructHash(model)
 		if err != nil {
 			return "", fmt.Errorf("Error while calculating identity hash for Table %v", model.TableName)

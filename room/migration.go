@@ -76,10 +76,10 @@ func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
 
 func (room *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
 	for _, migration := range applicableMigrations {
-		migration.Apply(room.db.GetUnderlyingORM())
+		migration.Apply(room.orm.GetUnderlyingORM())
 	}
 
-	dbExec := room.db.Delete(GoRoomSchemaMaster{})
+	dbExec := room.orm.Delete(GoRoomSchemaMaster{})
 	if dbExec.Error != nil {
 		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
@@ -90,7 +90,7 @@ func (room *Room) performMigrations(currentIdentityHash string, applicableMigrat
 		IdentityHash: currentIdentityHash,
 	}
 
-	dbExec = room.db.Create(&metadata)
+	dbExec = room.orm.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error

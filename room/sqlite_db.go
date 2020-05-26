@@ -29,7 +29,7 @@ func (room *Room) runFirstTimeDBCreation() error {
 		IdentityHash: identityHash,
 	}
 
-	dbExec := room.db.Create(&metadata)
+	dbExec := room.orm.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
@@ -41,16 +41,16 @@ func (room *Room) runFirstTimeDBCreation() error {
 func (room *Room) wipeOutExistingDB() {
 
 	if room.isSchemaMasterPresent() {
-		room.db.DropTable(GoRoomSchemaMaster{})
+		room.orm.DropTable(GoRoomSchemaMaster{})
 	}
 
 	for _, entity := range room.entities {
-		if room.db.HasTable(entity) {
-			room.db.DropTable(entity)
+		if room.orm.HasTable(entity) {
+			room.orm.DropTable(entity)
 		}
 	}
 
-	room.db = nil
+	room.orm = nil
 }
 
 func (room *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {

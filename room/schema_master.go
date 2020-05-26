@@ -9,16 +9,16 @@ type GoRoomSchemaMaster struct {
 }
 
 func (room *Room) isSchemaMasterPresent() bool {
-	return room.db.HasTable(&GoRoomSchemaMaster{})
+	return room.orm.HasTable(&GoRoomSchemaMaster{})
 }
 
 func (room *Room) createSchemaMaster() {
-	room.db.CreateTable(&GoRoomSchemaMaster{})
+	room.orm.CreateTable(&GoRoomSchemaMaster{})
 }
 
 func (room *Room) getRoomMetadataFromDB() (*GoRoomSchemaMaster, error) {
 	var roomMetadata GoRoomSchemaMaster
-	result, err := room.db.QueryLatest(&roomMetadata, "version", "DESC")
+	result, err := room.orm.QueryLatest(&roomMetadata, "version", "DESC")
 	if err != nil {
 		logger.Errorf("Error while fetching room metadata from the DB. %v", err)
 		return nil, err

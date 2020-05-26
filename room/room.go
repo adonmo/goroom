@@ -18,7 +18,7 @@ type Room struct {
 	version                        VersionNumber
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
-	db                             orm.ORM
+	orm                            orm.ORM
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
@@ -53,24 +53,25 @@ func (room *Room) GetDB() (*gorm.DB, error) {
 		return nil, err
 	}
 
-	err = room.initRoomDB(sqliteDB)
+	ormAdapter := orm.NewGORM(sqliteDB)
+	err = room.initRoomDB(ormAdapter)
 	if err != nil && room.fallbackToDestructiveMigration {
 		room.wipeOutExistingDB()
-		err = room.initRoomDB(sqliteDB)
+		err = room.initRoomDB(ormAdapter)
 	}
 
-	return room.db.GetUnderlyingORM().(*gorm.DB), err
+	return room.orm.GetUnderlyingORM().(*gorm.DB), err
 }
 
 //Init Initialize Room Database
-func (room *Room) initRoomDB(db *gorm.DB) (err error) {
+func (room *Room) initRoomDB(orm orm.ORM) (err error) {
 	defer func() {
 		if err != nil {
-			room.db = nil
+			room.orm = nil
 		}
 	}()
 
-	room.db = orm.NewGORM(db)
+	room.orm = orm
 	if !room.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
 		err = room.runFirstTimeDBCreation()
