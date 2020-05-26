@@ -3,8 +3,6 @@ package room
 import (
 	"fmt"
 	"sort"
-
-	"adonmo.com/goroom/util/deephash"
 )
 
 func (appDB *Room) createEntities() {
@@ -28,14 +26,14 @@ func (appDB *Room) calculateIdentityHash() (string, error) {
 
 	for _, entity := range sortedEntities {
 		model := appDB.orm.GetModelDefinition(entity)
-		sum, err := deephash.ConstructHash(model)
+		sum, err := appDB.identityCalculator.ConstructHash(model)
 		if err != nil {
 			return "", fmt.Errorf("Error while calculating identity hash for Table %v", model.TableName)
 		}
 		entityHashArr = append(entityHashArr, sum)
 	}
 
-	identity, err := deephash.ConstructHash(entityHashArr)
+	identity, err := appDB.identityCalculator.ConstructHash(entityHashArr)
 	if err != nil {
 		return "", fmt.Errorf("Error while calculating schema identity %v", entityHashArr)
 	}

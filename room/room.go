@@ -10,6 +10,11 @@ import (
 //VersionNumber Type for specifying version number across Room
 type VersionNumber uint
 
+//IdentityHashCalculator Calculates Identity based on the entity model definition returned by ORM
+type IdentityHashCalculator interface {
+	ConstructHash(entityModel interface{}) (ans string, err error)
+}
+
 //Room Tracks the database objects, properties and configuration
 type Room struct {
 	entities                       []interface{}
@@ -17,10 +22,13 @@ type Room struct {
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
 	orm                            orm.ORM
+	identityCalculator             IdentityHashCalculator
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
-func New(entities []interface{}, orm orm.ORM, version VersionNumber, migrations []Migration, fallbackToDestructiveMigration bool) (room *Room, errors []error) {
+func New(entities []interface{}, orm orm.ORM, version VersionNumber,
+	migrations []Migration, fallbackToDestructiveMigration bool, identityCalculator IdentityHashCalculator) (room *Room, errors []error) {
+
 	if len(entities) < 1 {
 		errors = append(errors, fmt.Errorf("No entities provided for the database"))
 	}
@@ -30,6 +38,9 @@ func New(entities []interface{}, orm orm.ORM, version VersionNumber, migrations 
 	if version < 1 {
 		errors = append(errors, fmt.Errorf("Only non zero versions allowed"))
 	}
+	if identityCalculator == nil {
+		errors = append(errors, fmt.Errorf("Need an identity calculator"))
+	}
 
 	if len(errors) < 1 {
 		room = &Room{
@@ -38,6 +49,7 @@ func New(entities []interface{}, orm orm.ORM, version VersionNumber, migrations 
 			migrations:                     migrations,
 			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
 			orm:                            orm,
+			identityCalculator:             identityCalculator,
 		}
 	}
 
