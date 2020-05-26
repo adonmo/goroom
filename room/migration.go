@@ -5,14 +5,13 @@ import (
 	"sort"
 
 	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/room/orm"
 )
 
 //Migration Interface against users can define their migrations on the DB
 type Migration interface {
 	GetBaseVersion() VersionNumber
 	GetTargetVersion() VersionNumber
-	Apply(orm orm.ORM) error
+	Apply(db interface{}) error
 }
 
 //GetApplicableMigrations Fetches applicable migrations based on src and destination version numbers
@@ -77,7 +76,7 @@ func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
 
 func (room *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
 	for _, migration := range applicableMigrations {
-		migration.Apply(room.db)
+		migration.Apply(room.db.GetUnderlyingORM())
 	}
 
 	dbExec := room.db.Delete(GoRoomSchemaMaster{})
