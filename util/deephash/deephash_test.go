@@ -163,13 +163,13 @@ func (s *ExampleTestSuite) TestForPointerToStruct() {
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), s.InitHash, hash2)
 
-	ptr = &AnotherStruct{MapVar: map[string]interface{}{"three": []string{"five", "four",}, "one": "two"}}
+	ptr = &AnotherStruct{MapVar: map[string]interface{}{"three": []string{"five", "four"}, "one": "two"}}
 	s.Test.PtrToStructVar = ptr
 	hash3, err := ConstructHash(s.Test)
 	assert.Nil(s.T(), err)
 	assert.Equal(s.T(), s.InitHash, hash3)
 
-	ptr = &AnotherStruct{MapVar: map[string]interface{}{"three": []string{"5", "four",}, "one": "two"}}
+	ptr = &AnotherStruct{MapVar: map[string]interface{}{"three": []string{"5", "four"}, "one": "two"}}
 	s.Test.PtrToStructVar = ptr
 	hash4, err := ConstructHash(s.Test)
 	assert.Nil(s.T(), err)
