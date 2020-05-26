@@ -4,17 +4,7 @@ import (
 	"fmt"
 
 	"adonmo.com/goroom/logger"
-	"github.com/jinzhu/gorm"
 )
-
-func (appDB *Room) getSqliteDB() (*gorm.DB, error) {
-	db, err := gorm.Open("sqlite3", appDB.dbFilePath)
-	if err != nil {
-		return nil, fmt.Errorf("Unable to open Database at the given file path %v", appDB.dbFilePath)
-	}
-
-	return db, nil
-}
 
 func (appDB *Room) runFirstTimeDBCreation() error {
 	identityHash, err := appDB.calculateIdentityHash()

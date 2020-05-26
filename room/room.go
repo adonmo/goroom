@@ -5,7 +5,6 @@ import (
 
 	"adonmo.com/goroom/logger"
 	"adonmo.com/goroom/room/orm"
-	"github.com/jinzhu/gorm"
 )
 
 //VersionNumber Type for specifying version number across Room
@@ -14,7 +13,6 @@ type VersionNumber uint
 //Room Tracks the database objects, properties and configuration
 type Room struct {
 	entities                       []interface{}
-	dbFilePath                     string
 	version                        VersionNumber
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
@@ -22,12 +20,12 @@ type Room struct {
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
-func New(entities []interface{}, dbFilePath string, version VersionNumber, migrations []Migration, fallbackToDestructiveMigration bool) (room *Room, errors []error) {
+func New(entities []interface{}, orm orm.ORM, version VersionNumber, migrations []Migration, fallbackToDestructiveMigration bool) (room *Room, errors []error) {
 	if len(entities) < 1 {
 		errors = append(errors, fmt.Errorf("No entities provided for the database"))
 	}
-	if dbFilePath == "" {
-		errors = append(errors, fmt.Errorf("File path for DB missing"))
+	if orm == nil {
+		errors = append(errors, fmt.Errorf("Need an ORM to work with"))
 	}
 	if version < 1 {
 		errors = append(errors, fmt.Errorf("Only non zero versions allowed"))
@@ -36,42 +34,35 @@ func New(entities []interface{}, dbFilePath string, version VersionNumber, migra
 	if len(errors) < 1 {
 		room = &Room{
 			entities:                       entities,
-			dbFilePath:                     dbFilePath,
 			version:                        version,
 			migrations:                     migrations,
 			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
+			orm:                            orm,
 		}
 	}
 
 	return
 }
 
-//GetDB Returns Database object to be used by the application
-func (appDB *Room) GetDB() (*gorm.DB, error) {
-	sqliteDB, err := appDB.getSqliteDB()
-	if err != nil {
-		return nil, err
-	}
-
-	ormAdapter := orm.NewGORM(sqliteDB)
-	err = appDB.initRoomDB(ormAdapter)
+//InitializeAppDB Returns Database object to be used by the application
+func (appDB *Room) InitializeAppDB() error {
+	err := appDB.initRoomDB()
 	if err != nil && appDB.fallbackToDestructiveMigration {
 		appDB.wipeOutExistingDB()
-		err = appDB.initRoomDB(ormAdapter)
+		err = appDB.initRoomDB()
 	}
 
-	return appDB.orm.GetUnderlyingORM().(*gorm.DB), err
+	return err
 }
 
 //Init Initialize Room Database
-func (appDB *Room) initRoomDB(orm orm.ORM) (err error) {
+func (appDB *Room) initRoomDB() (err error) {
 	defer func() {
 		if err != nil {
 			appDB.orm = nil
 		}
 	}()
 
-	appDB.orm = orm
 	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
 		err = appDB.runFirstTimeDBCreation()

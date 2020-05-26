@@ -1,6 +1,8 @@
 package orm
 
-import "github.com/jinzhu/gorm"
+import (
+	"github.com/jinzhu/gorm"
+)
 
 //GORMAdapter Adpater for GORM as used by Room
 type GORMAdapter struct {
