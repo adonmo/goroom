@@ -10,7 +10,6 @@ import (
 func (room *Room) getSqliteDB() (*gorm.DB, error) {
 	db, err := gorm.Open("sqlite3", room.dbFilePath)
 	if err != nil {
-
 		return nil, fmt.Errorf("Unable to open Database at the given file path %v", room.dbFilePath)
 	}
 
