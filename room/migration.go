@@ -3,6 +3,8 @@ package room
 import (
 	"fmt"
 	"sort"
+
+	"adonmo.com/goroom/logger"
 )
 
 //Migration Interface against users can define their migrations on the DB
@@ -70,4 +72,28 @@ func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
 	}
 
 	return migrationMap
+}
+
+func (room *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
+	for _, migration := range applicableMigrations {
+		migration.Apply()
+	}
+
+	dbExec := room.db.Delete(GoRoomSchemaMaster{})
+	if dbExec.Error != nil {
+		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
+		return dbExec.Error
+	}
+
+	metadata := GoRoomSchemaMaster{
+		Version:      room.version,
+		IdentityHash: currentIdentityHash,
+	}
+
+	dbExec = room.db.Create(&metadata)
+	if dbExec.Error != nil {
+		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
+		return dbExec.Error
+	}
+	return nil
 }
