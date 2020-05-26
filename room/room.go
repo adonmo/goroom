@@ -1,12 +1,14 @@
 package room
 
 import (
+	"fmt"
+
 	"adonmo.com/goroom/logger"
 	"github.com/jinzhu/gorm"
 )
 
 //VersionNumber Type for specifying version number across Room
-type VersionNumber int
+type VersionNumber uint
 
 //Room Tracks the database objects, properties and configuration
 type Room struct {
@@ -16,6 +18,31 @@ type Room struct {
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
 	db                             *gorm.DB
+}
+
+//New Returns a new room struct that can be used to initialize and get a DB managed by room
+func New(entities []interface{}, dbFilePath string, version VersionNumber, migrations []Migration, fallbackToDestructiveMigration bool) (room *Room, errors []error) {
+	if len(entities) < 1 {
+		errors = append(errors, fmt.Errorf("No entities provided for the database"))
+	}
+	if dbFilePath == "" {
+		errors = append(errors, fmt.Errorf("File path for DB missing"))
+	}
+	if version < 1 {
+		errors = append(errors, fmt.Errorf("Only non zero versions allowed"))
+	}
+
+	if len(errors) < 1 {
+		room = &Room{
+			entities:                       entities,
+			dbFilePath:                     dbFilePath,
+			version:                        version,
+			migrations:                     migrations,
+			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
+		}
+	}
+
+	return
 }
 
 //GetDB Returns Database object to be used by the application
