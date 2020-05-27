@@ -70,3 +70,12 @@ func (adapter *GORMAdapter) GetLatestSchemaIdentityHashAndVersion() (identityHas
 	dbExec := adapter.db.Order("version DESC").First(&latest)
 	return latest.IdentityHash, int(latest.Version), dbExec.Error
 }
+
+//DoInTransaction Perform operations specified in the input function in a transaction
+func (adapter *GORMAdapter) DoInTransaction(fc func(tx room.ORM) error) (err error) {
+	gormTxFunc := func(tx *gorm.DB) error {
+		return fc(NewGORM(tx))
+	}
+
+	return adapter.db.Transaction(gormTxFunc)
+}

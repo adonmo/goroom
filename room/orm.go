@@ -10,6 +10,7 @@ type ORM interface {
 	GetModelDefinition(entity interface{}) ModelDefinition
 	GetUnderlyingORM() interface{}
 	GetLatestSchemaIdentityHashAndVersion() (identityHash string, version int, err error)
+	DoInTransaction(fc func(tx ORM) error) (err error)
 }
 
 //ModelDefinition Interface to access Definition of ORM Entity Model

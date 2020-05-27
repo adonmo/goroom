@@ -182,6 +182,22 @@ func (suite *IntegrationTestSuite) TestGetLatestSchemaIdentityHashAndVersion() {
 
 }
 
+func (suite *IntegrationTestSuite) TestDoInTransaction() {
+	dummyEntry := room.GoRoomSchemaMaster{
+		IdentityHash: "adaghsghas",
+		Version:      room.VersionNumber(23),
+	}
+	transactionFunc := func(orm room.ORM) error {
+		suite.Adapter.CreateTable(room.GoRoomSchemaMaster{})
+		suite.Adapter.Create(&dummyEntry)
+
+		return nil
+	}
+
+	suite.Adapter.DoInTransaction(transactionFunc)
+
+}
+
 func TestMain(t *testing.T) {
 	suite.Run(t, new(IntegrationTestSuite))
 }
