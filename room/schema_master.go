@@ -17,11 +17,13 @@ func (appDB *Room) createSchemaMaster() {
 }
 
 func (appDB *Room) getRoomMetadataFromDB() (*GoRoomSchemaMaster, error) {
-	var roomMetadata GoRoomSchemaMaster
-	result, err := appDB.orm.QueryLatest(&roomMetadata, "version", "DESC")
+	identityHash, version, err := appDB.orm.GetLatestSchemaIdentityHashAndVersion()
 	if err != nil {
 		logger.Errorf("Error while fetching room metadata from the DB. %v", err)
 		return nil, err
 	}
-	return result.(*GoRoomSchemaMaster), nil
+	return &GoRoomSchemaMaster{
+		IdentityHash: identityHash,
+		Version:      VersionNumber(version),
+	}, err
 }

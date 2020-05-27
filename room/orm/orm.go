@@ -9,7 +9,7 @@ type ORM interface {
 	DropTable(entities ...interface{}) Result
 	GetModelDefinition(entity interface{}) ModelDefinition
 	GetUnderlyingORM() interface{}
-	QueryLatest(entity interface{}, orderByColumnName string, orderByType string) (result interface{}, err error)
+	GetLatestSchemaIdentityHashAndVersion() (identityHash string, version int, err error)
 }
 
 //ModelDefinition Interface to access Definition of ORM Entity Model

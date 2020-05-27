@@ -3,6 +3,7 @@ package adapter
 import (
 	"testing"
 
+	"adonmo.com/goroom/room"
 	"adonmo.com/goroom/room/orm"
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
@@ -145,22 +146,35 @@ func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	}
 }
 
-func (suite *IntegrationTestSuite) TestQueryLatest() {
-	suite.Adapter.CreateTable(DummyTable{})
-	dummyEntry := DummyTable{
-		ID:    2,
-		Value: "Two",
+func (suite *IntegrationTestSuite) TestGetUnderlyingORM() {
+	diff := deep.Equal(suite.DB, suite.Adapter.GetUnderlyingORM())
+	if diff != nil {
+		suite.T().Errorf("Underlying ORM found to be different than expected. Diff: %v", diff)
 	}
-	anotherDummyEntry := DummyTable{
-		ID:    3,
-		Value: "Three",
+}
+
+func (suite *IntegrationTestSuite) TestGetLatestSchemaIdentityHashAndVersion() {
+	suite.Adapter.CreateTable(room.GoRoomSchemaMaster{})
+	dummyEntry := room.GoRoomSchemaMaster{
+		IdentityHash: "adaghsghas",
+		Version:      room.VersionNumber(23),
+	}
+	anotherDummyEntry := room.GoRoomSchemaMaster{
+		IdentityHash: "eyryhyeue",
+		Version:      room.VersionNumber(24),
 	}
 	suite.Adapter.Create(&dummyEntry)
 	suite.Adapter.Create(&anotherDummyEntry)
 
-	var queryResult DummyTable
-	// result, _ := suite.Adapter.QueryLatest(queryResult, "id", "DESC")
-	suite.DB.Order("id DESC").First(&queryResult)
+	identity, version, err := suite.Adapter.GetLatestSchemaIdentityHashAndVersion()
+	queryResult := room.GoRoomSchemaMaster{
+		IdentityHash: identity,
+		Version:      room.VersionNumber(version),
+	}
+
+	if err != nil {
+		suite.T().Errorf("No error expected when querying schema master for latest record. Got: %v", err)
+	}
 
 	diff := deep.Equal(anotherDummyEntry, queryResult)
 	if diff != nil {

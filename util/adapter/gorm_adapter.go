@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"adonmo.com/goroom/room"
 	"adonmo.com/goroom/room/orm"
 	"github.com/jinzhu/gorm"
 )
@@ -64,13 +65,9 @@ func (adapter *GORMAdapter) GetUnderlyingORM() interface{} {
 	return adapter.db
 }
 
-//QueryLatest Query the latest entry from database table
-func (adapter *GORMAdapter) QueryLatest(entity interface{}, orderByColumnName string, orderByType string) (result interface{}, err error) {
-	dbExec := adapter.db.Order(orderByColumnName + " " + orderByType).First(entity)
-	if dbExec.Error != nil {
-		err = dbExec.Error
-	} else {
-		result = entity
-	}
-	return
+//GetLatestSchemaIdentityHashAndVersion Query the latest schema master entry
+func (adapter *GORMAdapter) GetLatestSchemaIdentityHashAndVersion() (identityHash string, version int, err error) {
+	var latest room.GoRoomSchemaMaster
+	dbExec := adapter.db.Order("version DESC").First(&latest)
+	return latest.IdentityHash, int(latest.Version), dbExec.Error
 }
