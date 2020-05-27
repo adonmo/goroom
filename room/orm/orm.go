@@ -2,11 +2,11 @@ package orm
 
 //ORM The orm component used by Room
 type ORM interface {
-	HasTable(value interface{}) bool
+	HasTable(entity interface{}) bool
 	CreateTable(models ...interface{}) Result
-	Delete(value interface{}, where ...interface{}) Result
-	Create(value interface{}) Result
-	DropTable(values ...interface{}) Result
+	TruncateTable(entity interface{}) Result
+	Create(entity interface{}) Result
+	DropTable(entities ...interface{}) Result
 	GetModelDefinition(entity interface{}) ModelDefinition
 	GetUnderlyingORM() interface{}
 	QueryLatest(entity interface{}, orderByColumnName string, orderByType string) (result interface{}, err error)

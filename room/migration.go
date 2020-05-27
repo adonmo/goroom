@@ -79,7 +79,7 @@ func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigra
 		migration.Apply(appDB.orm.GetUnderlyingORM())
 	}
 
-	dbExec := appDB.orm.Delete(GoRoomSchemaMaster{})
+	dbExec := appDB.orm.TruncateTable(GoRoomSchemaMaster{})
 	if dbExec.Error != nil {
 		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error

@@ -18,35 +18,35 @@ func NewGORM(db *gorm.DB) orm.ORM {
 }
 
 //HasTable Check Table exists
-func (adapter *GORMAdapter) HasTable(value interface{}) bool {
-	return adapter.db.HasTable(value)
+func (adapter *GORMAdapter) HasTable(entity interface{}) bool {
+	return adapter.db.HasTable(entity)
 }
 
 //CreateTable Create a Table
-func (adapter *GORMAdapter) CreateTable(value ...interface{}) orm.Result {
+func (adapter *GORMAdapter) CreateTable(entities ...interface{}) orm.Result {
 	return orm.Result{
-		Error: adapter.db.CreateTable(value).Error,
+		Error: adapter.db.CreateTable(entities...).Error,
 	}
 }
 
-//Delete Delete Values
-func (adapter *GORMAdapter) Delete(value interface{}, where ...interface{}) orm.Result {
+//TruncateTable Delete All Values from table
+func (adapter *GORMAdapter) TruncateTable(entity interface{}) orm.Result {
 	return orm.Result{
-		Error: adapter.db.Delete(value, where).Error,
+		Error: adapter.db.Delete(entity).Error,
 	}
 }
 
 //Create Create a row
-func (adapter *GORMAdapter) Create(value interface{}) orm.Result {
+func (adapter *GORMAdapter) Create(entity interface{}) orm.Result {
 	return orm.Result{
-		Error: adapter.db.Create(value).Error,
+		Error: adapter.db.Create(entity).Error,
 	}
 }
 
 //DropTable Drop a table
-func (adapter *GORMAdapter) DropTable(values ...interface{}) orm.Result {
+func (adapter *GORMAdapter) DropTable(entities ...interface{}) orm.Result {
 	return orm.Result{
-		Error: adapter.db.DropTable(values).Error,
+		Error: adapter.db.DropTable(entities...).Error,
 	}
 }
 
@@ -72,6 +72,5 @@ func (adapter *GORMAdapter) QueryLatest(entity interface{}, orderByColumnName st
 	} else {
 		result = entity
 	}
-
 	return
 }
