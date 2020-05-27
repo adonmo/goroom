@@ -2,7 +2,6 @@ package adapter
 
 import (
 	"adonmo.com/goroom/room"
-	"adonmo.com/goroom/room/orm"
 	"github.com/jinzhu/gorm"
 )
 
@@ -12,7 +11,7 @@ type GORMAdapter struct {
 }
 
 //NewGORM Returns a new GORMAdapter
-func NewGORM(db *gorm.DB) orm.ORM {
+func NewGORM(db *gorm.DB) room.ORM {
 	return &GORMAdapter{
 		db: db,
 	}
@@ -24,37 +23,37 @@ func (adapter *GORMAdapter) HasTable(entity interface{}) bool {
 }
 
 //CreateTable Create a Table
-func (adapter *GORMAdapter) CreateTable(entities ...interface{}) orm.Result {
-	return orm.Result{
+func (adapter *GORMAdapter) CreateTable(entities ...interface{}) room.Result {
+	return room.Result{
 		Error: adapter.db.CreateTable(entities...).Error,
 	}
 }
 
 //TruncateTable Delete All Values from table
-func (adapter *GORMAdapter) TruncateTable(entity interface{}) orm.Result {
-	return orm.Result{
+func (adapter *GORMAdapter) TruncateTable(entity interface{}) room.Result {
+	return room.Result{
 		Error: adapter.db.Delete(entity).Error,
 	}
 }
 
 //Create Create a row
-func (adapter *GORMAdapter) Create(entity interface{}) orm.Result {
-	return orm.Result{
+func (adapter *GORMAdapter) Create(entity interface{}) room.Result {
+	return room.Result{
 		Error: adapter.db.Create(entity).Error,
 	}
 }
 
 //DropTable Drop a table
-func (adapter *GORMAdapter) DropTable(entities ...interface{}) orm.Result {
-	return orm.Result{
+func (adapter *GORMAdapter) DropTable(entities ...interface{}) room.Result {
+	return room.Result{
 		Error: adapter.db.DropTable(entities...).Error,
 	}
 }
 
 //GetModelDefinition Get representation of a database table(entity) as done by ORM
-func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) orm.ModelDefinition {
+func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) room.ModelDefinition {
 	model := adapter.db.NewScope(entity).GetModelStruct()
-	return orm.ModelDefinition{
+	return room.ModelDefinition{
 		EntityModel: model,
 		TableName:   model.TableName(adapter.db),
 	}

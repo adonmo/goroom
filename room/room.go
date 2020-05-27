@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/room/orm"
 )
 
 //VersionNumber Type for specifying version number across Room
@@ -21,12 +20,12 @@ type Room struct {
 	version                        VersionNumber
 	migrations                     []Migration
 	fallbackToDestructiveMigration bool
-	orm                            orm.ORM
+	orm                            ORM
 	identityCalculator             IdentityHashCalculator
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
-func New(entities []interface{}, orm orm.ORM, version VersionNumber,
+func New(entities []interface{}, orm ORM, version VersionNumber,
 	migrations []Migration, fallbackToDestructiveMigration bool, identityCalculator IdentityHashCalculator) (room *Room, errors []error) {
 
 	if len(entities) < 1 {

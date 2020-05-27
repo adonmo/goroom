@@ -4,7 +4,6 @@ import (
 	"testing"
 
 	"adonmo.com/goroom/room"
-	"adonmo.com/goroom/room/orm"
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
@@ -14,7 +13,7 @@ import (
 type IntegrationTestSuite struct {
 	suite.Suite
 	DB      *gorm.DB
-	Adapter orm.ORM
+	Adapter room.ORM
 }
 
 type DummyTable struct {
@@ -133,7 +132,7 @@ func (suite *IntegrationTestSuite) TestDropTable() {
 
 func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	expectedModel := suite.DB.NewScope(DummyTable{}).GetModelStruct()
-	expectedOutput := orm.ModelDefinition{
+	expectedOutput := room.ModelDefinition{
 		EntityModel: expectedModel,
 		TableName:   expectedModel.TableName(suite.DB),
 	}

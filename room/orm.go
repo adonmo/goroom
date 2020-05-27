@@ -1,4 +1,4 @@
-package orm
+package room
 
 //ORM The orm component used by Room
 type ORM interface {
