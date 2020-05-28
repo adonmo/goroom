@@ -48,6 +48,26 @@ func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
 	return
 }
 
+/* Initialization Scenarios In Brief:
+Scenario 1:
+	Trigger: 	No Schema Master Present.
+	Action:		Room creates Schema Master and any entity tables that are not there already.
+	Gotcha:		Existing Tables are assumed to have schema same as current version
+
+Scenario 2:
+	Trigger: 	Schema Master Present and Version is same.
+	Action:		Room verfies integrity by comparing current and saved hash. Triggers Error if not equal.
+	Gotcha: 	Schema Master is assumed to have latest(that is last known) version record stored.
+
+Scenario 3:
+	Trigger:	Schema Master Present and Version is different
+	Action: 	Room triggers migration. Triggers error if migration fails
+	Gotcha: 	An Empty migration must be specified even if no database action(like altering tables etc) is required for version change.
+
+If the initialization fails for any reason in any of the three scenarios then we check for destructive migration option.
+If enabled whole DB(Schema Master and known entities) is wiped out and init is retried
+*/
+
 //InitializeAppDB Returns Database object to be used by the application
 func (appDB *Room) InitializeAppDB() error {
 	err := appDB.initRoomDB()
@@ -96,7 +116,7 @@ func (appDB *Room) initRoomDB() (err error) {
 	if appDB.version == roomMetadata.Version {
 		err = appDB.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
 	} else {
-		appDB.performMigrations(currentIdentityHash, applicableMigrations)
+		err = appDB.performMigrations(currentIdentityHash, applicableMigrations)
 	}
 
 	return err
