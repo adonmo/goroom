@@ -1,7 +1,8 @@
 package room
 
 import (
-	"testing"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/suite"
 )
 
 type DummyTable struct {
@@ -14,6 +15,22 @@ type AnotherDummyTable struct {
 	Text string
 }
 
-func TestNewRoom(t *testing.T) {
+type RoomConstructorTestSuite struct {
+	suite.Suite
+	MockControl *gomock.Controller
+}
+
+func (suite *RoomConstructorTestSuite) BeforeTest() {
+	mockCtrl := gomock.NewController(suite.T())
+	suite.MockControl = mockCtrl
+}
+
+func (suite *RoomConstructorTestSuite) TearDownTest() {
+	suite.MockControl.Finish()
+}
+
+func (suite *RoomConstructorTestSuite) TestNew() {
+	// entities = []interface{}{DummyTable{}, AnotherDummyTable{}}
+	// orm = mocks.NewMockORM(suite.MockControl)
 
 }

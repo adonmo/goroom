@@ -7,13 +7,6 @@ import (
 	"adonmo.com/goroom/logger"
 )
 
-//Migration Interface against users can define their migrations on the DB
-type Migration interface {
-	GetBaseVersion() VersionNumber
-	GetTargetVersion() VersionNumber
-	Apply(db interface{}) error
-}
-
 //GetApplicableMigrations Fetches applicable migrations based on src and destination version numbers
 func GetApplicableMigrations(migrations []Migration, src VersionNumber, dest VersionNumber) (applicableMigrations []Migration, err error) {
 	migrationMap := getMigrationMap(migrations)

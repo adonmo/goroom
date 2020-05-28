@@ -206,3 +206,68 @@ func (mr *MockIdentityHashCalculatorMockRecorder) ConstructHash(entityModel inte
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConstructHash", reflect.TypeOf((*MockIdentityHashCalculator)(nil).ConstructHash), entityModel)
 }
+
+// MockMigration is a mock of Migration interface
+type MockMigration struct {
+	ctrl     *gomock.Controller
+	recorder *MockMigrationMockRecorder
+}
+
+// MockMigrationMockRecorder is the mock recorder for MockMigration
+type MockMigrationMockRecorder struct {
+	mock *MockMigration
+}
+
+// NewMockMigration creates a new mock instance
+func NewMockMigration(ctrl *gomock.Controller) *MockMigration {
+	mock := &MockMigration{ctrl: ctrl}
+	mock.recorder = &MockMigrationMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockMigration) EXPECT() *MockMigrationMockRecorder {
+	return m.recorder
+}
+
+// GetBaseVersion mocks base method
+func (m *MockMigration) GetBaseVersion() room.VersionNumber {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBaseVersion")
+	ret0, _ := ret[0].(room.VersionNumber)
+	return ret0
+}
+
+// GetBaseVersion indicates an expected call of GetBaseVersion
+func (mr *MockMigrationMockRecorder) GetBaseVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBaseVersion", reflect.TypeOf((*MockMigration)(nil).GetBaseVersion))
+}
+
+// GetTargetVersion mocks base method
+func (m *MockMigration) GetTargetVersion() room.VersionNumber {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetTargetVersion")
+	ret0, _ := ret[0].(room.VersionNumber)
+	return ret0
+}
+
+// GetTargetVersion indicates an expected call of GetTargetVersion
+func (mr *MockMigrationMockRecorder) GetTargetVersion() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTargetVersion", reflect.TypeOf((*MockMigration)(nil).GetTargetVersion))
+}
+
+// Apply mocks base method
+func (m *MockMigration) Apply(db interface{}) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Apply", db)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Apply indicates an expected call of Apply
+func (mr *MockMigrationMockRecorder) Apply(db interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Apply", reflect.TypeOf((*MockMigration)(nil).Apply), db)
+}

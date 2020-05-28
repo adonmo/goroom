@@ -10,7 +10,7 @@ type ORM interface {
 	GetModelDefinition(entity interface{}) ModelDefinition
 	GetUnderlyingORM() interface{}
 	GetLatestSchemaIdentityHashAndVersion() (identityHash string, version int, err error)
-	DoInTransaction(fc func(tx ORM) error) (err error)
+	DoInTransaction(fc func(tx ORM) error) (err error) //In the event of error returned by fc rollback should happen, nil return value should lead to commit
 }
 
 //ModelDefinition Interface to access Definition of ORM Entity Model
@@ -27,4 +27,11 @@ type Result struct {
 //IdentityHashCalculator Calculates Identity based on the entity model definition returned by ORM
 type IdentityHashCalculator interface {
 	ConstructHash(entityModel interface{}) (ans string, err error)
+}
+
+//Migration Interface against users can define their migrations on the DB
+type Migration interface {
+	GetBaseVersion() VersionNumber
+	GetTargetVersion() VersionNumber
+	Apply(db interface{}) error
 }
