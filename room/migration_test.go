@@ -45,42 +45,46 @@ func (suite *MigrationSetupTestSuite) SetupTest() {
 
 func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForUpgrade() {
 
-	migration24, err := GetApplicableMigrations(suite.UpgradeMigrations, 2, 4)
+	migrations := append(suite.UpgradeMigrations, suite.DowngradeMigrations...)
+
+	migration24, err := GetApplicableMigrations(migrations, 2, 4)
 	isValidUpgradePath := len(migration24) == 2 && migration24[0].GetBaseVersion() == 2 && migration24[0].GetTargetVersion() == 3 &&
 		migration24[1].GetBaseVersion() == 3 && migration24[1].GetTargetVersion() == 4 && err == nil
-	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 2 to 4 using %v. Err: %v", migration24, suite.UpgradeMigrations, err)
+	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 2 to 4 using %v. Err: %v", migration24, migrations, err)
 
-	migration25, err := GetApplicableMigrations(suite.UpgradeMigrations, 2, 5)
+	migration25, err := GetApplicableMigrations(migrations, 2, 5)
 	isValidUpgradePath = len(migration25) == 1 && migration25[0].GetBaseVersion() == 2 && migration25[0].GetTargetVersion() == 5 && err == nil
-	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 2 to 5 using %v. Err: %v", migration25, suite.UpgradeMigrations, err)
+	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 2 to 5 using %v. Err: %v", migration25, migrations, err)
 
-	migration56, err := GetApplicableMigrations(suite.UpgradeMigrations, 5, 6)
+	migration56, err := GetApplicableMigrations(migrations, 5, 6)
 	isValidUpgradePath = len(migration25) == 1 && migration56[0].GetBaseVersion() == 5 && migration56[0].GetTargetVersion() == 6 && err == nil
-	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 5 to 6 using %v. Err: %v", migration56, suite.UpgradeMigrations, err)
+	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 5 to 6 using %v. Err: %v", migration56, migrations, err)
 
-	migration34, err := GetApplicableMigrations(suite.UpgradeMigrations, 3, 4)
+	migration34, err := GetApplicableMigrations(migrations, 3, 4)
 	isValidUpgradePath = len(migration25) == 1 && migration34[0].GetBaseVersion() == 3 && migration34[0].GetTargetVersion() == 4 && err == nil
-	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 3 to 4 using %v. Err: %v", migration34, suite.UpgradeMigrations, err)
+	assert.Truef(suite.T(), isValidUpgradePath, "Wrong migration plan %v for 3 to 4 using %v. Err: %v", migration34, migrations, err)
 
 }
 
 func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForDowngrade() {
 
-	migration52, err := GetApplicableMigrations(suite.DowngradeMigrations, 5, 2)
+	migrations := append(suite.UpgradeMigrations, suite.DowngradeMigrations...)
+
+	migration52, err := GetApplicableMigrations(migrations, 5, 2)
 	isValidDowngradePath := len(migration52) == 2 && migration52[0].GetBaseVersion() == 5 && migration52[0].GetTargetVersion() == 3 &&
 		migration52[1].GetBaseVersion() == 3 && migration52[1].GetTargetVersion() == 2 && err == nil
-	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 5 to 2 using %v. Err: %v", migration52, suite.DowngradeMigrations, err)
+	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 5 to 2 using %v. Err: %v", migration52, migrations, err)
 
-	migration32, err := GetApplicableMigrations(suite.DowngradeMigrations, 3, 2)
+	migration32, err := GetApplicableMigrations(migrations, 3, 2)
 	isValidDowngradePath = len(migration32) == 1 && migration32[0].GetBaseVersion() == 3 && migration32[0].GetTargetVersion() == 2 && err == nil
-	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 3 to 2 using %v. Err: %v", migration32, suite.DowngradeMigrations, err)
+	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 3 to 2 using %v. Err: %v", migration32, migrations, err)
 
-	migration53, err := GetApplicableMigrations(suite.DowngradeMigrations, 5, 3)
+	migration53, err := GetApplicableMigrations(migrations, 5, 3)
 	isValidDowngradePath = len(migration32) == 1 && migration53[0].GetBaseVersion() == 5 && migration53[0].GetTargetVersion() == 3 && err == nil
-	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 5 to 3 using %v. Err: %v", migration53, suite.DowngradeMigrations, err)
+	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 5 to 3 using %v. Err: %v", migration53, migrations, err)
 
-	migration43, err := GetApplicableMigrations(suite.DowngradeMigrations, 4, 3)
+	migration43, err := GetApplicableMigrations(migrations, 4, 3)
 	isValidDowngradePath = len(migration32) == 1 && migration43[0].GetBaseVersion() == 4 && migration43[0].GetTargetVersion() == 3 && err == nil
-	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 4 to 3 using %v. Err: %v", migration43, suite.DowngradeMigrations, err)
+	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 4 to 3 using %v. Err: %v", migration43, migrations, err)
 
 }
