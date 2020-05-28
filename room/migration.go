@@ -5,17 +5,18 @@ import (
 	"sort"
 
 	"adonmo.com/goroom/logger"
+	"adonmo.com/goroom/orm"
 )
 
 //GetApplicableMigrations Fetches applicable migrations based on src and destination version numbers
-func GetApplicableMigrations(migrations []Migration, src VersionNumber, dest VersionNumber) (applicableMigrations []Migration, err error) {
+func GetApplicableMigrations(migrations []orm.Migration, src orm.VersionNumber, dest orm.VersionNumber) (applicableMigrations []orm.Migration, err error) {
 	migrationMap := getMigrationMap(migrations)
 	isUpgrade := src < dest
 
 	for isUpgrade && src < dest || !isUpgrade && dest < src {
 		applicableTargets := migrationMap[src]
 		if len(applicableTargets) < 1 {
-			return []Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+			return []orm.Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
 		}
 
 		first := len(applicableTargets) - 1
@@ -41,16 +42,16 @@ func GetApplicableMigrations(migrations []Migration, src VersionNumber, dest Ver
 		}
 
 		if !pathFound {
-			return []Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+			return []orm.Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
 		}
 	}
 
 	return
 }
 
-func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
+func getMigrationMap(migrations []orm.Migration) map[orm.VersionNumber][]orm.Migration {
 
-	migrationMap := make(map[VersionNumber][]Migration)
+	migrationMap := make(map[orm.VersionNumber][]orm.Migration)
 	for _, migration := range migrations {
 		start := migration.GetBaseVersion()
 
@@ -67,12 +68,12 @@ func getMigrationMap(migrations []Migration) map[VersionNumber][]Migration {
 	return migrationMap
 }
 
-func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigrations []Migration) error {
+func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigrations []orm.Migration) error {
 	for _, migration := range applicableMigrations {
-		migration.Apply(appDB.orm.GetUnderlyingORM())
+		migration.Apply(appDB.dba.GetUnderlyingORM())
 	}
 
-	dbExec := appDB.orm.TruncateTable(GoRoomSchemaMaster{})
+	dbExec := appDB.dba.TruncateTable(GoRoomSchemaMaster{})
 	if dbExec.Error != nil {
 		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
@@ -83,7 +84,7 @@ func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigra
 		IdentityHash: currentIdentityHash,
 	}
 
-	dbExec = appDB.orm.Create(&metadata)
+	dbExec = appDB.dba.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error

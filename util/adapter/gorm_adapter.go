@@ -1,6 +1,7 @@
 package adapter
 
 import (
+	"adonmo.com/goroom/orm"
 	"adonmo.com/goroom/room"
 	"github.com/jinzhu/gorm"
 )
@@ -11,7 +12,7 @@ type GORMAdapter struct {
 }
 
 //NewGORM Returns a new GORMAdapter
-func NewGORM(db *gorm.DB) room.ORM {
+func NewGORM(db *gorm.DB) orm.ORM {
 	return &GORMAdapter{
 		db: db,
 	}
@@ -23,37 +24,37 @@ func (adapter *GORMAdapter) HasTable(entity interface{}) bool {
 }
 
 //CreateTable Create a Table
-func (adapter *GORMAdapter) CreateTable(entities ...interface{}) room.Result {
-	return room.Result{
+func (adapter *GORMAdapter) CreateTable(entities ...interface{}) orm.Result {
+	return orm.Result{
 		Error: adapter.db.CreateTable(entities...).Error,
 	}
 }
 
 //TruncateTable Delete All Values from table
-func (adapter *GORMAdapter) TruncateTable(entity interface{}) room.Result {
-	return room.Result{
+func (adapter *GORMAdapter) TruncateTable(entity interface{}) orm.Result {
+	return orm.Result{
 		Error: adapter.db.Delete(entity).Error,
 	}
 }
 
 //Create Create a row
-func (adapter *GORMAdapter) Create(entity interface{}) room.Result {
-	return room.Result{
+func (adapter *GORMAdapter) Create(entity interface{}) orm.Result {
+	return orm.Result{
 		Error: adapter.db.Create(entity).Error,
 	}
 }
 
 //DropTable Drop a table
-func (adapter *GORMAdapter) DropTable(entities ...interface{}) room.Result {
-	return room.Result{
+func (adapter *GORMAdapter) DropTable(entities ...interface{}) orm.Result {
+	return orm.Result{
 		Error: adapter.db.DropTable(entities...).Error,
 	}
 }
 
 //GetModelDefinition Get representation of a database table(entity) as done by ORM
-func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) room.ModelDefinition {
+func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) orm.ModelDefinition {
 	model := adapter.db.NewScope(entity).GetModelStruct()
-	return room.ModelDefinition{
+	return orm.ModelDefinition{
 		EntityModel: model,
 		TableName:   model.TableName(adapter.db),
 	}
@@ -72,7 +73,7 @@ func (adapter *GORMAdapter) GetLatestSchemaIdentityHashAndVersion() (identityHas
 }
 
 //DoInTransaction Perform operations specified in the input function in a transaction
-func (adapter *GORMAdapter) DoInTransaction(fc func(tx room.ORM) error) (err error) {
+func (adapter *GORMAdapter) DoInTransaction(fc func(tx orm.ORM) error) (err error) {
 	gormTxFunc := func(tx *gorm.DB) error {
 		return fc(NewGORM(tx))
 	}

@@ -4,29 +4,27 @@ import (
 	"fmt"
 
 	"adonmo.com/goroom/logger"
+	"adonmo.com/goroom/orm"
 )
-
-//VersionNumber Type for specifying version number across Room
-type VersionNumber uint
 
 //Room Tracks the database objects, properties and configuration
 type Room struct {
 	entities                       []interface{}
-	version                        VersionNumber
-	migrations                     []Migration
+	version                        orm.VersionNumber
+	migrations                     []orm.Migration
 	fallbackToDestructiveMigration bool
-	orm                            ORM
-	identityCalculator             IdentityHashCalculator
+	dba                            orm.ORM
+	identityCalculator             orm.IdentityHashCalculator
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
-func New(entities []interface{}, orm ORM, version VersionNumber,
-	migrations []Migration, fallbackToDestructiveMigration bool, identityCalculator IdentityHashCalculator) (room *Room, errors []error) {
+func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
+	migrations []orm.Migration, fallbackToDestructiveMigration bool, identityCalculator orm.IdentityHashCalculator) (room *Room, errors []error) {
 
 	if len(entities) < 1 {
 		errors = append(errors, fmt.Errorf("No entities provided for the database"))
 	}
-	if orm == nil {
+	if dba == nil {
 		errors = append(errors, fmt.Errorf("Need an ORM to work with"))
 	}
 	if version < 1 {
@@ -42,7 +40,7 @@ func New(entities []interface{}, orm ORM, version VersionNumber,
 			version:                        version,
 			migrations:                     migrations,
 			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
-			orm:                            orm,
+			dba:                            dba,
 			identityCalculator:             identityCalculator,
 		}
 	}
@@ -65,7 +63,7 @@ func (appDB *Room) InitializeAppDB() error {
 func (appDB *Room) initRoomDB() (err error) {
 	defer func() {
 		if err != nil {
-			appDB.orm = nil
+			appDB.dba = nil
 		}
 	}()
 

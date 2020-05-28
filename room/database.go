@@ -19,7 +19,7 @@ func (appDB *Room) runFirstTimeDBCreation() error {
 		IdentityHash: identityHash,
 	}
 
-	dbExec := appDB.orm.Create(&metadata)
+	dbExec := appDB.dba.Create(&metadata)
 	if dbExec.Error != nil {
 		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
 		return dbExec.Error
@@ -31,16 +31,16 @@ func (appDB *Room) runFirstTimeDBCreation() error {
 func (appDB *Room) wipeOutExistingDB() {
 
 	if appDB.isSchemaMasterPresent() {
-		appDB.orm.DropTable(GoRoomSchemaMaster{})
+		appDB.dba.DropTable(GoRoomSchemaMaster{})
 	}
 
 	for _, entity := range appDB.entities {
-		if appDB.orm.HasTable(entity) {
-			appDB.orm.DropTable(entity)
+		if appDB.dba.HasTable(entity) {
+			appDB.dba.DropTable(entity)
 		}
 	}
 
-	appDB.orm = nil
+	appDB.dba = nil
 }
 
 func (appDB *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {

@@ -1,4 +1,7 @@
-package room
+package orm
+
+//VersionNumber Type for specifying version number across Room
+type VersionNumber uint
 
 //ORM The orm component used by Room
 type ORM interface {

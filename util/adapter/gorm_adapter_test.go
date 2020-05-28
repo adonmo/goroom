@@ -3,6 +3,7 @@ package adapter
 import (
 	"testing"
 
+	"adonmo.com/goroom/orm"
 	"adonmo.com/goroom/room"
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
@@ -13,7 +14,7 @@ import (
 type IntegrationTestSuite struct {
 	suite.Suite
 	DB      *gorm.DB
-	Adapter room.ORM
+	Adapter orm.ORM
 }
 
 type DummyTable struct {
@@ -132,7 +133,7 @@ func (suite *IntegrationTestSuite) TestDropTable() {
 
 func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	expectedModel := suite.DB.NewScope(DummyTable{}).GetModelStruct()
-	expectedOutput := room.ModelDefinition{
+	expectedOutput := orm.ModelDefinition{
 		EntityModel: expectedModel,
 		TableName:   expectedModel.TableName(suite.DB),
 	}
@@ -156,11 +157,11 @@ func (suite *IntegrationTestSuite) TestGetLatestSchemaIdentityHashAndVersion() {
 	suite.Adapter.CreateTable(room.GoRoomSchemaMaster{})
 	dummyEntry := room.GoRoomSchemaMaster{
 		IdentityHash: "adaghsghas",
-		Version:      room.VersionNumber(23),
+		Version:      orm.VersionNumber(23),
 	}
 	anotherDummyEntry := room.GoRoomSchemaMaster{
 		IdentityHash: "eyryhyeue",
-		Version:      room.VersionNumber(24),
+		Version:      orm.VersionNumber(24),
 	}
 	suite.Adapter.Create(&dummyEntry)
 	suite.Adapter.Create(&anotherDummyEntry)
@@ -168,7 +169,7 @@ func (suite *IntegrationTestSuite) TestGetLatestSchemaIdentityHashAndVersion() {
 	identity, version, err := suite.Adapter.GetLatestSchemaIdentityHashAndVersion()
 	queryResult := room.GoRoomSchemaMaster{
 		IdentityHash: identity,
-		Version:      room.VersionNumber(version),
+		Version:      orm.VersionNumber(version),
 	}
 
 	if err != nil {
@@ -185,9 +186,9 @@ func (suite *IntegrationTestSuite) TestGetLatestSchemaIdentityHashAndVersion() {
 func (suite *IntegrationTestSuite) TestDoInTransaction() {
 	dummyEntry := room.GoRoomSchemaMaster{
 		IdentityHash: "adaghsghas",
-		Version:      room.VersionNumber(23),
+		Version:      orm.VersionNumber(23),
 	}
-	transactionFunc := func(orm room.ORM) error {
+	transactionFunc := func(orm orm.ORM) error {
 		suite.Adapter.CreateTable(room.GoRoomSchemaMaster{})
 		suite.Adapter.Create(&dummyEntry)
 
