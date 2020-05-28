@@ -1,6 +1,8 @@
 package room
 
 import (
+	"fmt"
+
 	"adonmo.com/goroom/orm"
 	"adonmo.com/goroom/orm/mocks"
 	"github.com/golang/mock/gomock"
@@ -87,4 +89,103 @@ func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForDowngrade() 
 	isValidDowngradePath = len(migration32) == 1 && migration43[0].GetBaseVersion() == 4 && migration43[0].GetTargetVersion() == 3 && err == nil
 	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 4 to 3 using %v. Err: %v", migration43, migrations, err)
 
+}
+
+type MigrationExecutionTestSuite struct {
+	suite.Suite
+	MockCtrl          *gomock.Controller
+	ValidMigrations   []orm.Migration
+	InvalidMigrations []orm.Migration
+	AppDB             *Room
+	MockDBA           *mocks.MockORM
+}
+
+func (suite *MigrationExecutionTestSuite) SetupTest() {
+
+	suite.MockCtrl = gomock.NewController(suite.T())
+
+	for range []int{1, 2, 3} {
+		m := mocks.NewMockMigration(suite.MockCtrl)
+		m.EXPECT().Apply(gomock.Any()).Return(nil).AnyTimes()
+		suite.ValidMigrations = append(suite.ValidMigrations, m)
+
+		m = mocks.NewMockMigration(suite.MockCtrl)
+		m.EXPECT().Apply(gomock.Any()).Return(fmt.Errorf("Some DB Error")).AnyTimes()
+		suite.InvalidMigrations = append(suite.ValidMigrations, m)
+	}
+
+	suite.MockDBA = mocks.NewMockORM(suite.MockCtrl)
+	suite.AppDB = &Room{
+		version: orm.VersionNumber(3),
+		dba:     suite.MockDBA,
+	}
+}
+
+func (suite *MigrationExecutionTestSuite) TestGetMigrationTransactionFunctionWithInvalidMigrations() {
+
+	var dummyORM interface{}
+	suite.MockDBA.EXPECT().GetUnderlyingORM().Return(dummyORM).AnyTimes()
+
+	migrationFunc := getMigrationTransactionFunction(suite.AppDB.version, "asasasa", append(suite.ValidMigrations, suite.InvalidMigrations...))
+
+	err := migrationFunc(suite.AppDB.dba)
+	assert.NotNil(suite.T(), err, "Should have received an error for invalid migrations")
+}
+
+func (suite *MigrationExecutionTestSuite) TestGetMigrationTransactionFunctionWithFailedTruncationOfSchemaMaster() {
+
+	var dummyORM interface{}
+	expectedError := fmt.Errorf("Some DB mess happened")
+	suite.MockDBA.EXPECT().GetUnderlyingORM().Return(dummyORM).AnyTimes()
+	suite.MockDBA.EXPECT().TruncateTable(GoRoomSchemaMaster{}).Return(orm.Result{
+		Error: expectedError,
+	})
+
+	migrationFunc := getMigrationTransactionFunction(suite.AppDB.version, "asasasa", append(suite.ValidMigrations))
+
+	err := migrationFunc(suite.AppDB.dba)
+	assert.Equal(suite.T(), expectedError, err, "Should have received the expected error for failed truncation of schema master")
+}
+
+func (suite *MigrationExecutionTestSuite) TestGetMigrationTransactionFunctionWithFailedCreationOfMetadata() {
+
+	var dummyORM interface{}
+	expectedError := fmt.Errorf("Creation Failed")
+	identityHash := "asasasa"
+	suite.MockDBA.EXPECT().GetUnderlyingORM().Return(dummyORM).AnyTimes()
+	suite.MockDBA.EXPECT().TruncateTable(GoRoomSchemaMaster{}).Return(orm.Result{
+		Error: nil,
+	})
+	suite.MockDBA.EXPECT().Create(&GoRoomSchemaMaster{
+		Version:      suite.AppDB.version,
+		IdentityHash: identityHash,
+	}).Return(orm.Result{
+		Error: expectedError,
+	})
+
+	migrationFunc := getMigrationTransactionFunction(suite.AppDB.version, identityHash, append(suite.ValidMigrations))
+
+	err := migrationFunc(suite.AppDB.dba)
+	assert.Equal(suite.T(), expectedError, err, "Should have received the expected error for failed creation of schema master record")
+}
+
+func (suite *MigrationExecutionTestSuite) TestGetMigrationTransactionFunction() {
+
+	var dummyORM interface{}
+	identityHash := "asasasa"
+	suite.MockDBA.EXPECT().GetUnderlyingORM().Return(dummyORM).AnyTimes()
+	suite.MockDBA.EXPECT().TruncateTable(GoRoomSchemaMaster{}).Return(orm.Result{
+		Error: nil,
+	})
+	suite.MockDBA.EXPECT().Create(&GoRoomSchemaMaster{
+		Version:      suite.AppDB.version,
+		IdentityHash: identityHash,
+	}).Return(orm.Result{
+		Error: nil,
+	})
+
+	migrationFunc := getMigrationTransactionFunction(suite.AppDB.version, identityHash, append(suite.ValidMigrations))
+
+	err := migrationFunc(suite.AppDB.dba)
+	assert.Equal(suite.T(), nil, err, "No error expected. This is supposed to be the ideal scenario.")
 }

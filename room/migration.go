@@ -69,7 +69,22 @@ func getMigrationMap(migrations []orm.Migration) map[orm.VersionNumber][]orm.Mig
 }
 
 func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigrations []orm.Migration) error {
-	migrationFunc := func(dba orm.ORM) error {
+
+	return appDB.dba.DoInTransaction(getMigrationTransactionFunction(appDB.version, currentIdentityHash, applicableMigrations))
+}
+
+func getMigrationTransactionFunction(targetVersion orm.VersionNumber, currentIdentityHash string, applicableMigrations []orm.Migration) func(orm.ORM) error {
+
+	/*
+		Failure Scenarios:
+		1.) A migration fails
+		2.) Truncating the Schema Master fails
+		3.) Creating a new entry in Schema Master fails
+
+		Migrations, truncation and new entry creation are done in a single transaction.
+	*/
+
+	return func(dba orm.ORM) error {
 		for _, migration := range applicableMigrations {
 			err := migration.Apply(dba.GetUnderlyingORM())
 			if err != nil {
@@ -85,7 +100,7 @@ func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigra
 		}
 
 		metadata := GoRoomSchemaMaster{
-			Version:      appDB.version,
+			Version:      targetVersion,
 			IdentityHash: currentIdentityHash,
 		}
 
@@ -98,5 +113,4 @@ func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigra
 		return nil
 	}
 
-	return appDB.dba.DoInTransaction(migrationFunc)
 }
