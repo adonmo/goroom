@@ -69,25 +69,34 @@ func getMigrationMap(migrations []orm.Migration) map[orm.VersionNumber][]orm.Mig
 }
 
 func (appDB *Room) performMigrations(currentIdentityHash string, applicableMigrations []orm.Migration) error {
-	for _, migration := range applicableMigrations {
-		migration.Apply(appDB.dba.GetUnderlyingORM())
+	migrationFunc := func(dba orm.ORM) error {
+		for _, migration := range applicableMigrations {
+			err := migration.Apply(dba.GetUnderlyingORM())
+			if err != nil {
+				logger.Errorf("Failed while applying migration. %v", migration)
+				return err
+			}
+		}
+
+		dbExec := dba.TruncateTable(GoRoomSchemaMaster{})
+		if dbExec.Error != nil {
+			logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
+			return dbExec.Error
+		}
+
+		metadata := GoRoomSchemaMaster{
+			Version:      appDB.version,
+			IdentityHash: currentIdentityHash,
+		}
+
+		dbExec = dba.Create(&metadata)
+		if dbExec.Error != nil {
+			logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
+			return dbExec.Error
+		}
+
+		return nil
 	}
 
-	dbExec := appDB.dba.TruncateTable(GoRoomSchemaMaster{})
-	if dbExec.Error != nil {
-		logger.Errorf("Error while purging Room Schema Master. %v", dbExec.Error)
-		return dbExec.Error
-	}
-
-	metadata := GoRoomSchemaMaster{
-		Version:      appDB.version,
-		IdentityHash: currentIdentityHash,
-	}
-
-	dbExec = appDB.dba.Create(&metadata)
-	if dbExec.Error != nil {
-		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
-		return dbExec.Error
-	}
-	return nil
+	return appDB.dba.DoInTransaction(migrationFunc)
 }
