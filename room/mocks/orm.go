@@ -168,3 +168,41 @@ func (mr *MockORMMockRecorder) DoInTransaction(fc interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DoInTransaction", reflect.TypeOf((*MockORM)(nil).DoInTransaction), fc)
 }
+
+// MockIdentityHashCalculator is a mock of IdentityHashCalculator interface
+type MockIdentityHashCalculator struct {
+	ctrl     *gomock.Controller
+	recorder *MockIdentityHashCalculatorMockRecorder
+}
+
+// MockIdentityHashCalculatorMockRecorder is the mock recorder for MockIdentityHashCalculator
+type MockIdentityHashCalculatorMockRecorder struct {
+	mock *MockIdentityHashCalculator
+}
+
+// NewMockIdentityHashCalculator creates a new mock instance
+func NewMockIdentityHashCalculator(ctrl *gomock.Controller) *MockIdentityHashCalculator {
+	mock := &MockIdentityHashCalculator{ctrl: ctrl}
+	mock.recorder = &MockIdentityHashCalculatorMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use
+func (m *MockIdentityHashCalculator) EXPECT() *MockIdentityHashCalculatorMockRecorder {
+	return m.recorder
+}
+
+// ConstructHash mocks base method
+func (m *MockIdentityHashCalculator) ConstructHash(entityModel interface{}) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ConstructHash", entityModel)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ConstructHash indicates an expected call of ConstructHash
+func (mr *MockIdentityHashCalculatorMockRecorder) ConstructHash(entityModel interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConstructHash", reflect.TypeOf((*MockIdentityHashCalculator)(nil).ConstructHash), entityModel)
+}

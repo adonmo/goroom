@@ -23,3 +23,8 @@ type ModelDefinition struct {
 type Result struct {
 	Error error
 }
+
+//IdentityHashCalculator Calculates Identity based on the entity model definition returned by ORM
+type IdentityHashCalculator interface {
+	ConstructHash(entityModel interface{}) (ans string, err error)
+}

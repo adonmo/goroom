@@ -9,11 +9,6 @@ import (
 //VersionNumber Type for specifying version number across Room
 type VersionNumber uint
 
-//IdentityHashCalculator Calculates Identity based on the entity model definition returned by ORM
-type IdentityHashCalculator interface {
-	ConstructHash(entityModel interface{}) (ans string, err error)
-}
-
 //Room Tracks the database objects, properties and configuration
 type Room struct {
 	entities                       []interface{}
