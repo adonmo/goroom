@@ -118,4 +118,5 @@ func (suite *RoomConstructorTestSuite) TestNewWithMissingIdentityCalculator() {
 
 func TestMain(t *testing.T) {
 	suite.Run(t, new(RoomConstructorTestSuite))
+	suite.Run(t, new(MigrationSetupTestSuite))
 }

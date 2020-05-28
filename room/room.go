@@ -52,7 +52,7 @@ func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
 Scenario 1:
 	Trigger: 	No Schema Master Present.
 	Action:		Room creates Schema Master and any entity tables that are not there already.
-	Gotcha:		Existing Tables are assumed to have schema same as current version
+	Gotcha:		Pre Existing Tables are assumed to have schema same as current version
 
 Scenario 2:
 	Trigger: 	Schema Master Present and Version is same.
