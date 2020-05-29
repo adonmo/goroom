@@ -53,6 +53,9 @@ func (suite *RoomConstructorTestSuite) TestNewWithValidParams() {
 		fallbackToDestructiveMigration: suite.FallbackToDestructiveMigration,
 		identityCalculator:             suite.IdentityCalculator,
 	}
+	expected.initManager = &appDBManager{
+		appDB: expected,
+	}
 
 	got, errors := New(suite.Entities, suite.Dba, suite.Version, suite.Migrations, suite.FallbackToDestructiveMigration, suite.IdentityCalculator)
 	diff := deep.Equal(expected, got)
@@ -132,6 +135,18 @@ type RoomInitTestSuite struct {
 	AppDB            *Room
 }
 
+type MockInitManager struct {
+	appDB                       *Room
+	shouldRetryAfterDestruction bool
+	err                         error
+	initCallsMade               int
+}
+
+func (m *MockInitManager) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
+	m.initCallsMade++
+	return m.shouldRetryAfterDestruction, m.err
+}
+
 func (s *RoomInitTestSuite) SetupTest() {
 	mockCtrl := gomock.NewController(s.T())
 	s.MockControl = mockCtrl
@@ -144,14 +159,73 @@ func (s *RoomInitTestSuite) SetupTest() {
 	s.IdentityCalculator = s.MockIdentityCalc
 	s.Migrations = []orm.Migration{}
 
-	s.AppDB = &Room{
-		entities:                       s.Entities,
-		dba:                            s.Dba,
-		version:                        s.Version,
-		migrations:                     s.Migrations,
-		fallbackToDestructiveMigration: s.FallbackToDestructiveMigration,
-		identityCalculator:             s.IdentityCalculator,
+	s.AppDB, _ = New(s.Entities, s.Dba, s.Version, s.Migrations, s.FallbackToDestructiveMigration, s.IdentityCalculator)
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBWithErrorInIdentityHashCalculation() {
+
+	someError := fmt.Errorf("Hash calculation failed")
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return("", someError).AnyTimes()
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 Hash Problem")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBWithFallbackEnabledAndCleanUpSuccess() {
+
+	identityHash := "asadfadada"
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
+	mockInitManager := MockInitManager{
+		shouldRetryAfterDestruction: true,
+		err:                         fmt.Errorf("Some Error"),
 	}
+	s.AppDB.initManager = &mockInitManager
+
+	//CleanUp will be triggered after first try
+	s.AppDB.fallbackToDestructiveMigration = true
+	entitiesToDelete := append(s.AppDB.entities, GoRoomSchemaMaster{})
+	dbCleanUpFunc := getDBCleanUpFunction(entitiesToDelete)
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCleanUpFunc)).Return(nil)
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 After 2 init try")
+	assert.True(s.T(), mockInitManager.initCallsMade == 2, "Exactly two call to init expected")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBWithFallbackEnabledAndCleanUpFailure() {
+
+	identityHash := "asadfadada"
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
+	mockInitManager := MockInitManager{
+		shouldRetryAfterDestruction: true,
+		err:                         fmt.Errorf("Some Error"),
+	}
+	s.AppDB.initManager = &mockInitManager
+
+	//CleanUp will be triggered after first try
+	s.AppDB.fallbackToDestructiveMigration = true
+	entitiesToDelete := append(s.AppDB.entities, GoRoomSchemaMaster{})
+	dbCleanUpFunc := getDBCleanUpFunction(entitiesToDelete)
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCleanUpFunc)).Return(fmt.Errorf("Error in cleanup"))
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 After 2 init try")
+	assert.True(s.T(), mockInitManager.initCallsMade == 1, "Exactly one call to init expected")
 }
 
 func (s *RoomInitTestSuite) TestInitRoomDBForScenario1() {
@@ -168,22 +242,8 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario1() {
 	//TODO Tighter check on function arguments
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(nil)
 
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 1")
-}
-
-func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInIdentityHashCalculation() {
-
-	someError := fmt.Errorf("Hash calculation failed")
-
-	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
-	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
-		EntityModel: MockEntityModel{},
-		TableName:   "asasa",
-	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return("", someError).AnyTimes()
-
-	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 Hash Problem")
 }
 
 func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInDBCreation() {
@@ -201,7 +261,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInDBCreation() {
 	someError := fmt.Errorf("Creation Transaction Failed")
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(someError)
 
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), shouldRetry && err != nil, "Expected an error for Scenario 1 Creation Problem")
 }
 
@@ -217,7 +277,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario2() {
 
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
 
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 2")
 }
 
@@ -234,7 +294,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario2WithMetadataNotFetched() {
 
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return("", 0, someError)
 
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), shouldRetry && someError == err, "Error does not seem to be what is expected here for Scenario 2")
 }
 
@@ -251,7 +311,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario2WithIdentityMismatch() {
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedIdentityHash, int(s.AppDB.version), nil)
 
 	expectedError := fmt.Errorf("Database signature mismatch. Version %v", s.AppDB.version)
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	diff := deep.Equal(expectedError, err)
 	assert.True(s.T(), shouldRetry && diff == nil, "Return value does not seem to be what is expected here for Scenario 2 as signature won't match. %v %v", shouldRetry, err)
 }
@@ -279,7 +339,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 	migrationFunc := getMigrationTransactionFunction(s.AppDB.version, identityHash, migrations)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(nil)
 
-	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err := s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 3")
 
 	//Missing migration strategy
@@ -292,7 +352,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 
-	shouldRetry, err = s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err = s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), shouldRetry && err != nil, "Error expected here for Scenario 3 due to missing migration")
 
 	//Failed Migration Execution
@@ -307,7 +367,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(someError)
 
-	shouldRetry, err = s.AppDB.initRoomDB(identityHash)
+	shouldRetry, err = s.AppDB.initManager.initRoomDB(identityHash)
 	assert.True(s.T(), shouldRetry && err != nil, "Error expected here for Scenario 3 due to failed migration")
 }
 

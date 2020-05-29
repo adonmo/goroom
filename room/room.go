@@ -15,6 +15,7 @@ type Room struct {
 	fallbackToDestructiveMigration bool
 	dba                            orm.ORM
 	identityCalculator             orm.IdentityHashCalculator
+	initManager                    roomInitializer
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
@@ -42,6 +43,10 @@ func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
 			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
 			dba:                            dba,
 			identityCalculator:             identityCalculator,
+		}
+
+		room.initManager = &appDBManager{
+			appDB: room,
 		}
 	}
 
@@ -75,25 +80,33 @@ func (appDB *Room) InitializeAppDB() error {
 		return err
 	}
 
-	shouldRetryAfterDestruction, err := appDB.initRoomDB(identityHash)
+	shouldRetryAfterDestruction, err := appDB.initManager.initRoomDB(identityHash)
 	if err != nil && appDB.fallbackToDestructiveMigration && shouldRetryAfterDestruction {
 		dbCleanUpFunc := getDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
 		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
 		if err == nil {
-			_, err = appDB.initRoomDB(identityHash)
+			_, err = appDB.initManager.initRoomDB(identityHash)
 		}
 	}
 
 	return err
 }
 
-//Init Initialize Room Database
-func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
+type roomInitializer interface {
+	initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error)
+}
 
-	if !appDB.isSchemaMasterPresent() {
+type appDBManager struct {
+	appDB *Room
+}
+
+//Init Initialize Room Database
+func (manager *appDBManager) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
+
+	if !manager.appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
-		dbCreationFunc := getFirstTimeDBCreationFunction(currentIdentityHash, appDB.version, appDB.entities)
-		err = appDB.dba.DoInTransaction(dbCreationFunc)
+		dbCreationFunc := getFirstTimeDBCreationFunction(currentIdentityHash, manager.appDB.version, manager.appDB.entities)
+		err = manager.appDB.dba.DoInTransaction(dbCreationFunc)
 		if err != nil {
 			logger.Errorf("Unable to Initialize Room. Unexpected Error. %v", err)
 			return true, err
@@ -101,21 +114,21 @@ func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestr
 		return false, nil
 	}
 
-	roomMetadata, err := appDB.getRoomMetadataFromDB()
+	roomMetadata, err := manager.appDB.getRoomMetadataFromDB()
 	if err != nil {
 		logger.Error("Unable to fetch metadata although room master exists. This could be a sign of database corruption.")
 		return true, err
 	}
 
-	applicableMigrations, err := GetApplicableMigrations(appDB.migrations, roomMetadata.Version, appDB.version)
+	applicableMigrations, err := GetApplicableMigrations(manager.appDB.migrations, roomMetadata.Version, manager.appDB.version)
 	if err != nil {
 		return true, err
 	}
 
-	if appDB.version == roomMetadata.Version {
-		err = appDB.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
+	if manager.appDB.version == roomMetadata.Version {
+		err = manager.appDB.peformDatabaseSanityChecks(currentIdentityHash, roomMetadata)
 	} else {
-		err = appDB.performMigrations(currentIdentityHash, applicableMigrations)
+		err = manager.appDB.performMigrations(currentIdentityHash, applicableMigrations)
 	}
 
 	if err != nil {
