@@ -89,11 +89,6 @@ func (appDB *Room) InitializeAppDB() error {
 
 //Init Initialize Room Database
 func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
-	defer func() {
-		if err != nil {
-			appDB.dba = nil
-		}
-	}()
 
 	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")

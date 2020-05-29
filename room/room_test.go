@@ -205,6 +205,106 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInDBCreation
 	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an error for Scenario 1 Creation Problem")
 }
 
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2() {
+
+	identityHash := "asasaasa"
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
+
+	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 2")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithMetadataNotFetched() {
+
+	identityHash := "asasaasa"
+
+	someError := fmt.Errorf("Unable to fetch metadata from DB")
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return("", 0, someError)
+
+	assert.Equal(s.T(), someError, s.AppDB.InitializeAppDB(), "Error does not seem to be what is expected here for Scenario 2")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithIdentityMismatch() {
+
+	identityHash := "asasaasa"
+	storedIdentityHash := "etererere"
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(storedIdentityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
+
+	expectedError := fmt.Errorf("Database signature mismatch. Version %v", s.AppDB.version)
+	assert.Equal(s.T(), expectedError, s.AppDB.InitializeAppDB(), "Error does not seem to be what is expected here for Scenario 2 as signature won't match")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario3() {
+
+	identityHash := "asasaasa"
+
+	storedVersion := s.AppDB.version - 1
+	storedHash := "asaswrwdwe"
+
+	mockMigration := mocks.NewMockMigration(s.MockControl)
+	mockMigration.EXPECT().GetBaseVersion().Return(storedVersion).AnyTimes()
+	mockMigration.EXPECT().GetTargetVersion().Return(s.AppDB.version).AnyTimes()
+	migrations := []orm.Migration{mockMigration}
+
+	s.AppDB.migrations = migrations
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
+	migrationFunc := getMigrationTransactionFunction(s.AppDB.version, identityHash, migrations)
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(nil)
+
+	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 2")
+
+	//Missing migration strategy
+	s.AppDB.migrations = []orm.Migration{}
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Error expected here for Scenario 2 due to missing migration")
+
+	//Failed Migration Execution
+	s.AppDB.migrations = migrations
+	someError := fmt.Errorf("DB Mess when doing migration")
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(someError)
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Error expected here for Scenario 2 due to failed migration")
+}
+
 func TestMain(t *testing.T) {
 	suite.Run(t, new(RoomConstructorTestSuite))
 	suite.Run(t, new(MigrationSetupTestSuite))
