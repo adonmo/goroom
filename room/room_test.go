@@ -8,6 +8,7 @@ import (
 	"adonmo.com/goroom/orm/mocks"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -116,6 +117,94 @@ func (suite *RoomConstructorTestSuite) TestNewWithMissingIdentityCalculator() {
 	}
 }
 
+type RoomInitTestSuite struct {
+	suite.Suite
+	MockControl                    *gomock.Controller
+	Entities                       []interface{}
+	Version                        orm.VersionNumber
+	Migrations                     []orm.Migration
+	FallbackToDestructiveMigration bool
+	Dba                            orm.ORM
+	IdentityCalculator             orm.IdentityHashCalculator
+
+	MockORM          *mocks.MockORM
+	MockIdentityCalc *mocks.MockIdentityHashCalculator
+	AppDB            *Room
+}
+
+func (s *RoomInitTestSuite) SetupTest() {
+	mockCtrl := gomock.NewController(s.T())
+	s.MockControl = mockCtrl
+	s.MockORM = mocks.NewMockORM(s.MockControl)
+	s.MockIdentityCalc = mocks.NewMockIdentityHashCalculator(s.MockControl)
+	s.Entities = []interface{}{DummyTable{}, AnotherDummyTable{}}
+	s.Dba = s.MockORM
+	s.Version = orm.VersionNumber(3)
+	s.FallbackToDestructiveMigration = false
+	s.IdentityCalculator = s.MockIdentityCalc
+	s.Migrations = []orm.Migration{}
+
+	s.AppDB = &Room{
+		entities:                       s.Entities,
+		dba:                            s.Dba,
+		version:                        s.Version,
+		migrations:                     s.Migrations,
+		fallbackToDestructiveMigration: s.FallbackToDestructiveMigration,
+		identityCalculator:             s.IdentityCalculator,
+	}
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1() {
+
+	identityHash := "asasaasa"
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
+	dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, s.AppDB.version, s.AppDB.entities)
+	//TODO Tighter check on function arguments
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(nil)
+
+	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 1")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInIdentityHashCalculation() {
+
+	someError := fmt.Errorf("Hash calculation failed")
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return("", someError).AnyTimes()
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 Hash Problem")
+}
+
+func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInDBCreation() {
+
+	identityHash := "asasaasa"
+
+	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
+	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
+		EntityModel: MockEntityModel{},
+		TableName:   "asasa",
+	}).AnyTimes()
+	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
+	dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, s.AppDB.version, s.AppDB.entities)
+	//TODO Tighter check on function arguments
+	someError := fmt.Errorf("Creation Transaction Failed")
+	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(someError)
+
+	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an error for Scenario 1 Creation Problem")
+}
+
 func TestMain(t *testing.T) {
 	suite.Run(t, new(RoomConstructorTestSuite))
 	suite.Run(t, new(MigrationSetupTestSuite))
@@ -123,4 +212,5 @@ func TestMain(t *testing.T) {
 	suite.Run(t, new(SchemaMasterTestSuite))
 	suite.Run(t, new(EntityTestSuite))
 	suite.Run(t, new(DatabaseOperationsTestSuite))
+	suite.Run(t, new(RoomInitTestSuite))
 }

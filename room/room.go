@@ -70,12 +70,17 @@ If enabled whole DB(Schema Master and known entities) is wiped out and init is r
 
 //InitializeAppDB Returns Database object to be used by the application
 func (appDB *Room) InitializeAppDB() error {
-	err := appDB.initRoomDB()
-	if err != nil && appDB.fallbackToDestructiveMigration {
+	identityHash, err := appDB.calculateIdentityHash()
+	if err != nil {
+		return err
+	}
+
+	shouldRetryAfterDestruction, err := appDB.initRoomDB(identityHash)
+	if err != nil && appDB.fallbackToDestructiveMigration && shouldRetryAfterDestruction {
 		dbCleanUpFunc := getDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
 		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
 		if err == nil {
-			err = appDB.initRoomDB()
+			_, err = appDB.initRoomDB(identityHash)
 		}
 	}
 
@@ -83,7 +88,7 @@ func (appDB *Room) InitializeAppDB() error {
 }
 
 //Init Initialize Room Database
-func (appDB *Room) initRoomDB() (err error) {
+func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
 	defer func() {
 		if err != nil {
 			appDB.dba = nil
@@ -92,33 +97,24 @@ func (appDB *Room) initRoomDB() (err error) {
 
 	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
-		identityHash, err := appDB.calculateIdentityHash()
-		if err != nil {
-			return err
-		}
-		dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, appDB.version, appDB.entities)
+		dbCreationFunc := getFirstTimeDBCreationFunction(currentIdentityHash, appDB.version, appDB.entities)
 		err = appDB.dba.DoInTransaction(dbCreationFunc)
 		if err != nil {
 			logger.Errorf("Unable to Initialize Room. Unexpected Error. %v", err)
-			return err
+			return true, err
 		}
-		return nil
+		return false, nil
 	}
 
 	roomMetadata, err := appDB.getRoomMetadataFromDB()
 	if err != nil {
 		logger.Error("Unable to fetch metadata although room master exists. This could be a sign of database corruption.")
-		return err
-	}
-	currentIdentityHash, err := appDB.calculateIdentityHash()
-	if err != nil {
-		logger.Errorf("Error while calculating signature of current Entity collection. %v", err)
-		return err
+		return true, err
 	}
 
 	applicableMigrations, err := GetApplicableMigrations(appDB.migrations, roomMetadata.Version, appDB.version)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	if appDB.version == roomMetadata.Version {
@@ -127,5 +123,5 @@ func (appDB *Room) initRoomDB() (err error) {
 		err = appDB.performMigrations(currentIdentityHash, applicableMigrations)
 	}
 
-	return err
+	return true, err
 }
