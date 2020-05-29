@@ -7,8 +7,9 @@ import (
 
 func (appDB *Room) calculateIdentityHash() (string, error) {
 	var entityHashArr []string
-	var sortedEntities []interface{}
+	sortedEntities := make([]interface{}, len(appDB.entities))
 	copy(sortedEntities, appDB.entities)
+
 	sort.Slice(sortedEntities[:], func(i, j int) bool {
 		modelA := appDB.dba.GetModelDefinition(sortedEntities[i])
 		modelB := appDB.dba.GetModelDefinition(sortedEntities[j])
@@ -18,7 +19,7 @@ func (appDB *Room) calculateIdentityHash() (string, error) {
 
 	for _, entity := range sortedEntities {
 		model := appDB.dba.GetModelDefinition(entity)
-		sum, err := appDB.identityCalculator.ConstructHash(model)
+		sum, err := appDB.identityCalculator.ConstructHash(model.EntityModel)
 		if err != nil {
 			return "", fmt.Errorf("Error while calculating identity hash for Table %v", model.TableName)
 		}
