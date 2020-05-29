@@ -163,7 +163,6 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario1() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
 
 	dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, s.AppDB.version, s.AppDB.entities)
 	//TODO Tighter check on function arguments
@@ -196,7 +195,6 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInDBCreation() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
 
 	dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, s.AppDB.version, s.AppDB.entities)
 	//TODO Tighter check on function arguments
@@ -216,7 +214,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario2() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
 
 	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
@@ -233,7 +231,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario2WithMetadataNotFetched() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return("", 0, someError)
 
 	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
@@ -276,7 +274,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 	migrationFunc := getMigrationTransactionFunction(s.AppDB.version, identityHash, migrations)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(nil)
@@ -291,7 +289,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 
 	shouldRetry, err = s.AppDB.initRoomDB(identityHash)
@@ -305,7 +303,7 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
+
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(someError)
 
