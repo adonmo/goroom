@@ -21,7 +21,7 @@ func (suite *MigrationSetupTestSuite) SetupTest() {
 	suite.MockCtrl = gomock.NewController(suite.T())
 
 	upgradeMigrationVersions := [][2]orm.VersionNumber{
-		{2, 3}, {3, 4}, {4, 5}, {2, 5}, {5, 6},
+		{2, 3}, {3, 4}, {4, 5}, {2, 5}, {5, 6}, {6, 8},
 	}
 
 	downgradeMigrationVersions := [][2]orm.VersionNumber{
@@ -88,6 +88,30 @@ func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForDowngrade() 
 	migration43, err := GetApplicableMigrations(migrations, 4, 3)
 	isValidDowngradePath = len(migration32) == 1 && migration43[0].GetBaseVersion() == 4 && migration43[0].GetTargetVersion() == 3 && err == nil
 	assert.Truef(suite.T(), isValidDowngradePath, "Wrong migration plan %v for 4 to 3 using %v. Err: %v", migration43, migrations, err)
+
+}
+
+func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForNonExistentSourceVersion() {
+
+	migrations := append(suite.UpgradeMigrations, suite.DowngradeMigrations...)
+	src := orm.VersionNumber(1)
+	dest := orm.VersionNumber(2)
+	expectedError := fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+
+	_, err := GetApplicableMigrations(migrations, src, dest)
+	assert.Equal(suite.T(), expectedError, err, "Incorrect Error when fetching migrations for non existent source version")
+
+}
+
+func (suite *MigrationSetupTestSuite) TestGetApplicableMigrationsForNonExistentDestinationVersion() {
+
+	migrations := suite.UpgradeMigrations
+	src := orm.VersionNumber(6)
+	dest := orm.VersionNumber(7)
+	expectedError := fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+
+	_, err := GetApplicableMigrations(migrations, src, dest)
+	assert.Equal(suite.T(), expectedError, err, "Incorrect Error when fetching migrations for non existent destination version")
 
 }
 

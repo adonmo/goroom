@@ -13,10 +13,12 @@ func GetApplicableMigrations(migrations []orm.Migration, src orm.VersionNumber, 
 	migrationMap := getMigrationMap(migrations)
 	isUpgrade := src < dest
 
+	missingPathErrFormat := "Unable to generate path for migration from %v to %v"
+
 	for isUpgrade && src < dest || !isUpgrade && dest < src {
 		applicableTargets := migrationMap[src]
 		if len(applicableTargets) < 1 {
-			return []orm.Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+			return []orm.Migration{}, fmt.Errorf(missingPathErrFormat, src, dest)
 		}
 
 		first := len(applicableTargets) - 1
@@ -42,7 +44,7 @@ func GetApplicableMigrations(migrations []orm.Migration, src orm.VersionNumber, 
 		}
 
 		if !pathFound {
-			return []orm.Migration{}, fmt.Errorf("Unable to generate path for migration from %v to %v", src, dest)
+			return []orm.Migration{}, fmt.Errorf(missingPathErrFormat, src, dest)
 		}
 	}
 
