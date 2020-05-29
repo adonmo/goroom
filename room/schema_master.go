@@ -12,11 +12,7 @@ type GoRoomSchemaMaster struct {
 }
 
 func (appDB *Room) isSchemaMasterPresent() bool {
-	return appDB.dba.HasTable(&GoRoomSchemaMaster{})
-}
-
-func (appDB *Room) createSchemaMaster() {
-	appDB.dba.CreateTable(&GoRoomSchemaMaster{})
+	return appDB.dba.HasTable(GoRoomSchemaMaster{})
 }
 
 func (appDB *Room) getRoomMetadataFromDB() (*GoRoomSchemaMaster, error) {

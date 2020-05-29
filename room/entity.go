@@ -5,14 +5,6 @@ import (
 	"sort"
 )
 
-func (appDB *Room) createEntities() {
-	for _, entity := range appDB.entities {
-		if !appDB.dba.HasTable(entity) {
-			appDB.dba.CreateTable(entity)
-		}
-	}
-}
-
 func (appDB *Room) calculateIdentityHash() (string, error) {
 	var entityHashArr []string
 	var sortedEntities []interface{}

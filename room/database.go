@@ -4,43 +4,54 @@ import (
 	"fmt"
 
 	"adonmo.com/goroom/logger"
+	"adonmo.com/goroom/orm"
 )
 
-func (appDB *Room) runFirstTimeDBCreation() error {
-	identityHash, err := appDB.calculateIdentityHash()
-	if err != nil {
-		return err
-	}
-	appDB.createSchemaMaster()
-	appDB.createEntities()
+func getFirstTimeDBCreationFunction(identityHash string, version orm.VersionNumber, entitiesToCreate []interface{}) func(orm.ORM) error {
 
-	metadata := GoRoomSchemaMaster{
-		Version:      appDB.version,
-		IdentityHash: identityHash,
-	}
+	return func(dba orm.ORM) error {
 
-	dbExec := appDB.dba.Create(&metadata)
-	if dbExec.Error != nil {
-		logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
-		return dbExec.Error
-	}
+		//Explicit Create without existence check. This ensures failure if this is not really a first time DB Creation
+		if err := dba.CreateTable(GoRoomSchemaMaster{}).Error; err != nil {
+			return err
+		}
 
-	return nil
+		for _, entity := range entitiesToCreate {
+			if !dba.HasTable(entity) {
+				if err := dba.CreateTable(entity).Error; err != nil {
+					return err
+				}
+			}
+		}
+
+		metadata := GoRoomSchemaMaster{
+			Version:      version,
+			IdentityHash: identityHash,
+		}
+
+		dbExec := dba.Create(&metadata)
+		if dbExec.Error != nil {
+			logger.Errorf("Error while adding entity hash to Room Schema Master. %v", dbExec.Error)
+			return dbExec.Error
+		}
+
+		return nil
+	}
 }
 
-func (appDB *Room) wipeOutExistingDB() {
+func getDBCleanUpFunction(entities []interface{}) func(orm.ORM) error {
 
-	if appDB.isSchemaMasterPresent() {
-		appDB.dba.DropTable(GoRoomSchemaMaster{})
-	}
-
-	for _, entity := range appDB.entities {
-		if appDB.dba.HasTable(entity) {
-			appDB.dba.DropTable(entity)
+	return func(dba orm.ORM) error {
+		for _, entity := range entities {
+			if dba.HasTable(entity) {
+				if err := dba.DropTable(entity).Error; err != nil {
+					return err
+				}
+			}
 		}
-	}
 
-	appDB.dba = nil
+		return nil
+	}
 }
 
 func (appDB *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {

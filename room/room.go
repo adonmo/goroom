@@ -72,8 +72,11 @@ If enabled whole DB(Schema Master and known entities) is wiped out and init is r
 func (appDB *Room) InitializeAppDB() error {
 	err := appDB.initRoomDB()
 	if err != nil && appDB.fallbackToDestructiveMigration {
-		appDB.wipeOutExistingDB()
-		err = appDB.initRoomDB()
+		dbCleanUpFunc := getDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
+		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
+		if err == nil {
+			err = appDB.initRoomDB()
+		}
 	}
 
 	return err
@@ -89,7 +92,12 @@ func (appDB *Room) initRoomDB() (err error) {
 
 	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
-		err = appDB.runFirstTimeDBCreation()
+		identityHash, err := appDB.calculateIdentityHash()
+		if err != nil {
+			return err
+		}
+		dbCreationFunc := getFirstTimeDBCreationFunction(identityHash, appDB.version, appDB.entities)
+		err = appDB.dba.DoInTransaction(dbCreationFunc)
 		if err != nil {
 			logger.Errorf("Unable to Initialize Room. Unexpected Error. %v", err)
 			return err
