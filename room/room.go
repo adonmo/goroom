@@ -109,7 +109,7 @@ func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestr
 
 	applicableMigrations, err := GetApplicableMigrations(appDB.migrations, roomMetadata.Version, appDB.version)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 
 	if appDB.version == roomMetadata.Version {
@@ -118,5 +118,9 @@ func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestr
 		err = appDB.performMigrations(currentIdentityHash, applicableMigrations)
 	}
 
-	return true, err
+	if err != nil {
+		shouldRetryAfterDestruction = true
+	}
+
+	return shouldRetryAfterDestruction, err
 }

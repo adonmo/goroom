@@ -154,7 +154,7 @@ func (s *RoomInitTestSuite) SetupTest() {
 	}
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario1() {
 
 	identityHash := "asasaasa"
 
@@ -169,10 +169,11 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1() {
 	//TODO Tighter check on function arguments
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(nil)
 
-	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 1")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 1")
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInIdentityHashCalculation() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInIdentityHashCalculation() {
 
 	someError := fmt.Errorf("Hash calculation failed")
 
@@ -186,7 +187,7 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInIdentityHa
 	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 Hash Problem")
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInDBCreation() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInDBCreation() {
 
 	identityHash := "asasaasa"
 
@@ -202,10 +203,11 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario1WithErrorInDBCreation
 	someError := fmt.Errorf("Creation Transaction Failed")
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(dbCreationFunc)).Return(someError)
 
-	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an error for Scenario 1 Creation Problem")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), shouldRetry && err != nil, "Expected an error for Scenario 1 Creation Problem")
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario2() {
 
 	identityHash := "asasaasa"
 
@@ -217,10 +219,11 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2() {
 	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
 
-	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 2")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 2")
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithMetadataNotFetched() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario2WithMetadataNotFetched() {
 
 	identityHash := "asasaasa"
 
@@ -233,10 +236,11 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithMetadataNotFetche
 	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return("", 0, someError)
 
-	assert.Equal(s.T(), someError, s.AppDB.InitializeAppDB(), "Error does not seem to be what is expected here for Scenario 2")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), shouldRetry && someError == err, "Error does not seem to be what is expected here for Scenario 2")
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithIdentityMismatch() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario2WithIdentityMismatch() {
 
 	identityHash := "asasaasa"
 	storedIdentityHash := "etererere"
@@ -246,14 +250,15 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario2WithIdentityMismatch(
 		EntityModel: MockEntityModel{},
 		TableName:   "asasa",
 	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(storedIdentityHash, nil).AnyTimes()
-	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(identityHash, int(s.AppDB.version), nil)
+	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedIdentityHash, int(s.AppDB.version), nil)
 
 	expectedError := fmt.Errorf("Database signature mismatch. Version %v", s.AppDB.version)
-	assert.Equal(s.T(), expectedError, s.AppDB.InitializeAppDB(), "Error does not seem to be what is expected here for Scenario 2 as signature won't match")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	diff := deep.Equal(expectedError, err)
+	assert.True(s.T(), shouldRetry && diff == nil, "Return value does not seem to be what is expected here for Scenario 2 as signature won't match. %v %v", shouldRetry, err)
 }
 
-func (s *RoomInitTestSuite) TestInitializeAppDBForScenario3() {
+func (s *RoomInitTestSuite) TestInitRoomDBForScenario3() {
 
 	identityHash := "asasaasa"
 
@@ -276,7 +281,8 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario3() {
 	migrationFunc := getMigrationTransactionFunction(s.AppDB.version, identityHash, migrations)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(nil)
 
-	assert.Nil(s.T(), s.AppDB.InitializeAppDB(), "No error expected here for Scenario 2")
+	shouldRetry, err := s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 3")
 
 	//Missing migration strategy
 	s.AppDB.migrations = []orm.Migration{}
@@ -288,7 +294,8 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario3() {
 	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return(identityHash, nil).AnyTimes()
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 
-	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Error expected here for Scenario 2 due to missing migration")
+	shouldRetry, err = s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), shouldRetry && err != nil, "Error expected here for Scenario 3 due to missing migration")
 
 	//Failed Migration Execution
 	s.AppDB.migrations = migrations
@@ -302,7 +309,8 @@ func (s *RoomInitTestSuite) TestInitializeAppDBForScenario3() {
 	s.MockORM.EXPECT().GetLatestSchemaIdentityHashAndVersion().Return(storedHash, int(storedVersion), nil)
 	s.MockORM.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(migrationFunc)).Return(someError)
 
-	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Error expected here for Scenario 2 due to failed migration")
+	shouldRetry, err = s.AppDB.initRoomDB(identityHash)
+	assert.True(s.T(), shouldRetry && err != nil, "Error expected here for Scenario 3 due to failed migration")
 }
 
 func TestMain(t *testing.T) {
