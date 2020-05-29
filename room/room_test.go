@@ -122,4 +122,5 @@ func TestMain(t *testing.T) {
 	suite.Run(t, new(MigrationExecutionTestSuite))
 	suite.Run(t, new(SchemaMasterTestSuite))
 	suite.Run(t, new(EntityTestSuite))
+	suite.Run(t, new(DatabaseOperationsTestSuite))
 }
