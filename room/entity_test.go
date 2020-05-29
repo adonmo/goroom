@@ -1,6 +1,8 @@
 package room
 
 import (
+	"fmt"
+
 	"adonmo.com/goroom/orm"
 	"adonmo.com/goroom/orm/mocks"
 	"github.com/go-test/deep"
@@ -86,5 +88,46 @@ func (s *EntityTestSuite) TestCalculateIdentityHash() {
 	if diff != nil || err1 != nil || err2 != nil || diffFromExpected != nil {
 		s.T().Errorf("Identity Hash Calculation not deterministic for a given set of entities. DiffForRuns: %v DiffFromExpected: %v. Errors: %v %v",
 			diff, diffFromExpected, err1, err2)
+	}
+}
+
+func (s *EntityTestSuite) TestCalculateIdentityHashWithErrorInModelHashConstruction() {
+
+	expectedError := fmt.Errorf("Error while calculating identity hash for Table %v", "another_dummy_table")
+
+	entitiesOrder := []interface{}{DummyTable{}, AnotherDummyTable{}}
+
+	s.AppDB.entities = entitiesOrder
+	gomock.InOrder(
+		s.IdentityCalc.EXPECT().ConstructHash(s.AnotherDummyTableEntityModel).Return("", expectedError),
+	)
+	_, err := s.AppDB.calculateIdentityHash()
+	diff := deep.Equal(expectedError, err)
+
+	if diff != nil {
+		s.T().Errorf("Identity Hash Calculation not working per expectation in error scenario. Diff:%v", diff)
+	}
+}
+
+func (s *EntityTestSuite) TestCalculateIdentityHashWithErrorInOverallHashConstruction() {
+
+	dummyTableModelHash := "asasasadefe"
+	anotherDummyTableModelHash := "fefefefefe"
+
+	entityHashArr := []string{anotherDummyTableModelHash, dummyTableModelHash}
+	entitiesOrder := []interface{}{DummyTable{}, AnotherDummyTable{}}
+
+	s.AppDB.entities = entitiesOrder
+	expectedError := fmt.Errorf("Error while calculating schema identity %v", entityHashArr)
+	gomock.InOrder(
+		s.IdentityCalc.EXPECT().ConstructHash(s.AnotherDummyTableEntityModel).Return(anotherDummyTableModelHash, nil),
+		s.IdentityCalc.EXPECT().ConstructHash(s.DummyTableEntityModel).Return(dummyTableModelHash, nil),
+		s.IdentityCalc.EXPECT().ConstructHash(entityHashArr).Return("", fmt.Errorf("Some error in Hashing")),
+	)
+	_, err := s.AppDB.calculateIdentityHash()
+
+	diff := deep.Equal(expectedError, err)
+	if diff != nil {
+		s.T().Errorf("Identity Hash Calculation not working per expectation in error scenario. Diff:%v", diff)
 	}
 }
