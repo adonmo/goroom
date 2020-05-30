@@ -68,6 +68,8 @@ func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entities
 		prepareDBForMigrationTesting(dbFilePath, oldEntities, srcVersionNumber, applicableMigrations)
 
 		for i := srcIdx + 1; i < len(entitiesForVersionsArr); i++ {
+
+			//Create Room Object
 			currentVersionNumber := orm.VersionNumber(i + 1)
 			db, gormAdapter := getDBAndGORMAdapter(dbFilePath)
 			identityCalculator := new(adapter.EntityHashConstructor)
@@ -78,11 +80,14 @@ func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entities
 			}
 
 			logger.Infof("Testing Init for Version %v with base %v", currentVersionNumber, srcVersionNumber)
+
+			//Initialize Room
 			err := groom.InitializeRoom(appDB, false)
 			if err != nil {
 				panic(fmt.Errorf("Error while init for Version %v", currentVersionNumber))
 			}
 
+			//Verify Version
 			identity, version, err := gormAdapter.GetLatestSchemaIdentityHashAndVersion()
 			if err != nil {
 				panic(err)
