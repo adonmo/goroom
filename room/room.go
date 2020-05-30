@@ -7,6 +7,11 @@ import (
 	"adonmo.com/goroom/orm"
 )
 
+//Initializer Interface that exposes functions for initializing a Room managed DB
+type Initializer interface {
+	Init(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error)
+}
+
 //Room Tracks the database objects, properties and configuration
 type Room struct {
 	entities                       []interface{}
@@ -75,12 +80,12 @@ func (appDB *Room) InitializeAppDB() error {
 		return err
 	}
 
-	shouldRetryAfterDestruction, err := appDB.initRoomDB(identityHash)
+	shouldRetryAfterDestruction, err := appDB.Init(identityHash)
 	if err != nil && appDB.fallbackToDestructiveMigration && shouldRetryAfterDestruction {
 		dbCleanUpFunc := getDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
 		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
 		if err == nil {
-			_, err = appDB.initRoomDB(identityHash)
+			_, err = appDB.Init(identityHash)
 		}
 	}
 
@@ -88,7 +93,7 @@ func (appDB *Room) InitializeAppDB() error {
 }
 
 //Init Initialize Room Database
-func (appDB *Room) initRoomDB(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
+func (appDB *Room) Init(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
 
 	if !appDB.isSchemaMasterPresent() {
 		logger.Info("No Room Schema Master Detected in existing SQL DB. Creating now..")
