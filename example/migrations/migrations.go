@@ -5,6 +5,7 @@ import (
 
 	"adonmo.com/goroom/example/models/latest"
 	"adonmo.com/goroom/example/models/old"
+	"adonmo.com/goroom/logger"
 	"adonmo.com/goroom/orm"
 	"github.com/jinzhu/gorm"
 )
@@ -28,6 +29,7 @@ func (m *UserDBMigration) GetTargetVersion() orm.VersionNumber {
 
 //Apply ....
 func (m *UserDBMigration) Apply(db interface{}) error {
+	logger.Infof("Applying Migrations for %v to %v", m.BaseVersion, m.TargetVersion)
 	return m.MigrationFunc(db)
 }
 
