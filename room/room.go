@@ -110,9 +110,3 @@ func (appDB *Room) Init(currentIdentityHash string) (shouldRetryAfterDestruction
 
 	return shouldRetryAfterDestruction, err
 }
-
-//PerformDBCleanUp Cleans up existing DB removing Room metadata and all known entities
-func (appDB *Room) PerformDBCleanUp() error {
-	dbCleanUpFunc := GetDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
-	return appDB.dba.DoInTransaction(dbCleanUpFunc)
-}

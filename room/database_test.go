@@ -170,3 +170,31 @@ func (s *DatabaseOperationsTestSuite) TestGetDBCleanUpFunctionWithErrorInDroppin
 
 	assert.Equal(s.T(), expectedError, deleteFunc(s.DBA), "Incorrect Error Returned")
 }
+
+func (s *DatabaseOperationsTestSuite) TestPerformDBCleanup() {
+
+	entitiesToDelete := []interface{}{GoRoomSchemaMaster{}, DummyTable{}, AnotherDummyTable{}}
+	deleteFunc := GetDBCleanUpFunction(entitiesToDelete)
+
+	s.DBA.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(deleteFunc)).Return(nil)
+
+	room := &Room{
+		dba: s.DBA,
+	}
+	assert.Equal(s.T(), nil, room.PerformDBCleanUp(), "No Error expected when DB clenaup goes in successfully")
+
+}
+
+func (s *DatabaseOperationsTestSuite) TestPerformDBCleanupWithErrorInTransaction() {
+
+	entitiesToDelete := []interface{}{GoRoomSchemaMaster{}, DummyTable{}, AnotherDummyTable{}}
+	deleteFunc := GetDBCleanUpFunction(entitiesToDelete)
+
+	expectedError := fmt.Errorf("Transaction Error from DB")
+	s.DBA.EXPECT().DoInTransaction(gomock.AssignableToTypeOf(deleteFunc)).Return(expectedError)
+
+	room := &Room{
+		dba: s.DBA,
+	}
+	assert.Equal(s.T(), expectedError, room.PerformDBCleanUp(), "Unexpected error output when transaction fails during DB deletion")
+}

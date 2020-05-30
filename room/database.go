@@ -55,6 +55,12 @@ func GetDBCleanUpFunction(entities []interface{}) func(orm.ORM) error {
 	}
 }
 
+//PerformDBCleanUp Cleans up existing DB removing Room metadata and all known entities
+func (appDB *Room) PerformDBCleanUp() error {
+	dbCleanUpFunc := GetDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
+	return appDB.dba.DoInTransaction(dbCleanUpFunc)
+}
+
 func (appDB *Room) peformDatabaseSanityChecks(currentIdentityHash string, roomMetadata *GoRoomSchemaMaster) error {
 	if currentIdentityHash != roomMetadata.IdentityHash {
 		logger.Error("Database Hash does not match. Looks like you changed entity definitions but forgot to upgrade version.")
