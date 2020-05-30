@@ -134,7 +134,7 @@ func (s *DatabaseOperationsTestSuite) TestGetFirstTimeDBCreationFunctionWithErro
 func (s *DatabaseOperationsTestSuite) TestGetDBCleanUpFunction() {
 
 	entitiesToDelete := []interface{}{GoRoomSchemaMaster{}, DummyTable{}, AnotherDummyTable{}}
-	deleteFunc := getDBCleanUpFunction(entitiesToDelete)
+	deleteFunc := GetDBCleanUpFunction(entitiesToDelete)
 
 	gomock.InOrder(
 		s.DBA.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(true),
@@ -154,7 +154,7 @@ func (s *DatabaseOperationsTestSuite) TestGetDBCleanUpFunction() {
 func (s *DatabaseOperationsTestSuite) TestGetDBCleanUpFunctionWithErrorInDroppingATable() {
 
 	entitiesToDelete := []interface{}{GoRoomSchemaMaster{}, DummyTable{}, AnotherDummyTable{}}
-	deleteFunc := getDBCleanUpFunction(entitiesToDelete)
+	deleteFunc := GetDBCleanUpFunction(entitiesToDelete)
 	expectedError := fmt.Errorf("DB could not drop it")
 
 	gomock.InOrder(

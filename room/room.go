@@ -10,21 +10,22 @@ import (
 //Initializer Interface that exposes functions for initializing a Room managed DB
 type Initializer interface {
 	Init(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error)
+	CalculateIdentityHash() (string, error)
+	PerformDBCleanUp() error
 }
 
 //Room Tracks the database objects, properties and configuration
 type Room struct {
-	entities                       []interface{}
-	version                        orm.VersionNumber
-	migrations                     []orm.Migration
-	fallbackToDestructiveMigration bool
-	dba                            orm.ORM
-	identityCalculator             orm.IdentityHashCalculator
+	entities           []interface{}
+	version            orm.VersionNumber
+	migrations         []orm.Migration
+	dba                orm.ORM
+	identityCalculator orm.IdentityHashCalculator
 }
 
 //New Returns a new room struct that can be used to initialize and get a DB managed by room
 func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
-	migrations []orm.Migration, fallbackToDestructiveMigration bool, identityCalculator orm.IdentityHashCalculator) (room *Room, errors []error) {
+	migrations []orm.Migration, identityCalculator orm.IdentityHashCalculator) (room *Room, errors []error) {
 
 	if len(entities) < 1 {
 		errors = append(errors, fmt.Errorf("No entities provided for the database"))
@@ -41,12 +42,11 @@ func New(entities []interface{}, dba orm.ORM, version orm.VersionNumber,
 
 	if len(errors) < 1 {
 		room = &Room{
-			entities:                       entities,
-			version:                        version,
-			migrations:                     migrations,
-			fallbackToDestructiveMigration: fallbackToDestructiveMigration,
-			dba:                            dba,
-			identityCalculator:             identityCalculator,
+			entities:           entities,
+			version:            version,
+			migrations:         migrations,
+			dba:                dba,
+			identityCalculator: identityCalculator,
 		}
 	}
 
@@ -75,14 +75,14 @@ If enabled whole DB(Schema Master and known entities) is wiped out and init is r
 
 //InitializeAppDB Returns Database object to be used by the application
 func (appDB *Room) InitializeAppDB() error {
-	identityHash, err := appDB.calculateIdentityHash()
+	identityHash, err := appDB.CalculateIdentityHash()
 	if err != nil {
 		return err
 	}
 
 	shouldRetryAfterDestruction, err := appDB.Init(identityHash)
-	if err != nil && appDB.fallbackToDestructiveMigration && shouldRetryAfterDestruction {
-		dbCleanUpFunc := getDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
+	if err != nil && shouldRetryAfterDestruction {
+		dbCleanUpFunc := GetDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
 		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
 		if err == nil {
 			_, err = appDB.Init(identityHash)
@@ -128,4 +128,10 @@ func (appDB *Room) Init(currentIdentityHash string) (shouldRetryAfterDestruction
 	}
 
 	return shouldRetryAfterDestruction, err
+}
+
+//PerformDBCleanUp Cleans up existing DB removing Room metadata and all known entities
+func (appDB *Room) PerformDBCleanUp() error {
+	dbCleanUpFunc := GetDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
+	return appDB.dba.DoInTransaction(dbCleanUpFunc)
 }

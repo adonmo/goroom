@@ -39,7 +39,8 @@ func getFirstTimeDBCreationFunction(identityHash string, version orm.VersionNumb
 	}
 }
 
-func getDBCleanUpFunction(entities []interface{}) func(orm.ORM) error {
+//GetDBCleanUpFunction Gives you a function that dictates the DB clean up transaction
+func GetDBCleanUpFunction(entities []interface{}) func(orm.ORM) error {
 
 	return func(dba orm.ORM) error {
 		for _, entity := range entities {

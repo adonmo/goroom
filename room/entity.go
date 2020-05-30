@@ -5,7 +5,8 @@ import (
 	"sort"
 )
 
-func (appDB *Room) calculateIdentityHash() (string, error) {
+//CalculateIdentityHash Calculate the identity hash for current Room instance
+func (appDB *Room) CalculateIdentityHash() (string, error) {
 	var entityHashArr []string
 	sortedEntities := make([]interface{}, len(appDB.entities))
 	copy(sortedEntities, appDB.entities)

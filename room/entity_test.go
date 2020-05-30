@@ -73,7 +73,7 @@ func (s *EntityTestSuite) TestCalculateIdentityHash() {
 		s.IdentityCalc.EXPECT().ConstructHash(s.DummyTableEntityModel).Return(dummyTableModelHash, nil),
 		s.IdentityCalc.EXPECT().ConstructHash(entityHashArr).Return(expectedIdentityHash, nil),
 	)
-	identityHash1, err1 := s.AppDB.calculateIdentityHash()
+	identityHash1, err1 := s.AppDB.CalculateIdentityHash()
 
 	s.AppDB.entities = entitiesOrder2
 	gomock.InOrder(
@@ -81,7 +81,7 @@ func (s *EntityTestSuite) TestCalculateIdentityHash() {
 		s.IdentityCalc.EXPECT().ConstructHash(s.DummyTableEntityModel).Return(dummyTableModelHash, nil),
 		s.IdentityCalc.EXPECT().ConstructHash(entityHashArr).Return(expectedIdentityHash, nil),
 	)
-	identityHash2, err2 := s.AppDB.calculateIdentityHash()
+	identityHash2, err2 := s.AppDB.CalculateIdentityHash()
 
 	diff := deep.Equal(identityHash1, identityHash2)
 	diffFromExpected := deep.Equal(identityHash1, expectedIdentityHash)
@@ -101,7 +101,7 @@ func (s *EntityTestSuite) TestCalculateIdentityHashWithErrorInModelHashConstruct
 	gomock.InOrder(
 		s.IdentityCalc.EXPECT().ConstructHash(s.AnotherDummyTableEntityModel).Return("", expectedError),
 	)
-	_, err := s.AppDB.calculateIdentityHash()
+	_, err := s.AppDB.CalculateIdentityHash()
 	diff := deep.Equal(expectedError, err)
 
 	if diff != nil {
@@ -124,7 +124,7 @@ func (s *EntityTestSuite) TestCalculateIdentityHashWithErrorInOverallHashConstru
 		s.IdentityCalc.EXPECT().ConstructHash(s.DummyTableEntityModel).Return(dummyTableModelHash, nil),
 		s.IdentityCalc.EXPECT().ConstructHash(entityHashArr).Return("", fmt.Errorf("Some error in Hashing")),
 	)
-	_, err := s.AppDB.calculateIdentityHash()
+	_, err := s.AppDB.CalculateIdentityHash()
 
 	diff := deep.Equal(expectedError, err)
 	if diff != nil {

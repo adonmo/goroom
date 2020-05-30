@@ -24,13 +24,12 @@ type AnotherDummyTable struct {
 
 type RoomConstructorTestSuite struct {
 	suite.Suite
-	MockControl                    *gomock.Controller
-	Entities                       []interface{}
-	Version                        orm.VersionNumber
-	Migrations                     []orm.Migration
-	FallbackToDestructiveMigration bool
-	Dba                            orm.ORM
-	IdentityCalculator             orm.IdentityHashCalculator
+	MockControl        *gomock.Controller
+	Entities           []interface{}
+	Version            orm.VersionNumber
+	Migrations         []orm.Migration
+	Dba                orm.ORM
+	IdentityCalculator orm.IdentityHashCalculator
 }
 
 func (suite *RoomConstructorTestSuite) SetupTest() {
@@ -39,22 +38,20 @@ func (suite *RoomConstructorTestSuite) SetupTest() {
 	suite.Entities = []interface{}{DummyTable{}, AnotherDummyTable{}}
 	suite.Dba = mocks.NewMockORM(suite.MockControl)
 	suite.Version = orm.VersionNumber(3)
-	suite.FallbackToDestructiveMigration = false
 	suite.IdentityCalculator = mocks.NewMockIdentityHashCalculator(suite.MockControl)
 	suite.Migrations = []orm.Migration{}
 }
 
 func (suite *RoomConstructorTestSuite) TestNewWithValidParams() {
 	expected := &Room{
-		entities:                       suite.Entities,
-		dba:                            suite.Dba,
-		version:                        suite.Version,
-		migrations:                     suite.Migrations,
-		fallbackToDestructiveMigration: suite.FallbackToDestructiveMigration,
-		identityCalculator:             suite.IdentityCalculator,
+		entities:           suite.Entities,
+		dba:                suite.Dba,
+		version:            suite.Version,
+		migrations:         suite.Migrations,
+		identityCalculator: suite.IdentityCalculator,
 	}
 
-	got, errors := New(suite.Entities, suite.Dba, suite.Version, suite.Migrations, suite.FallbackToDestructiveMigration, suite.IdentityCalculator)
+	got, errors := New(suite.Entities, suite.Dba, suite.Version, suite.Migrations, suite.IdentityCalculator)
 	diff := deep.Equal(expected, got)
 
 	if diff != nil || len(errors) > 0 {
@@ -66,7 +63,7 @@ func (suite *RoomConstructorTestSuite) TestNewWithValidParams() {
 func (suite *RoomConstructorTestSuite) TestNewWithEmptyEntities() {
 
 	var expected *Room
-	got, errors := New([]interface{}{}, suite.Dba, suite.Version, suite.Migrations, suite.FallbackToDestructiveMigration, suite.IdentityCalculator)
+	got, errors := New([]interface{}{}, suite.Dba, suite.Version, suite.Migrations, suite.IdentityCalculator)
 	diff := deep.Equal(expected, got)
 
 	expectedError := fmt.Errorf("No entities provided for the database")
@@ -79,7 +76,7 @@ func (suite *RoomConstructorTestSuite) TestNewWithEmptyEntities() {
 func (suite *RoomConstructorTestSuite) TestNewWithMissingDBA() {
 
 	var expected *Room
-	got, errors := New(suite.Entities, nil, suite.Version, suite.Migrations, suite.FallbackToDestructiveMigration, suite.IdentityCalculator)
+	got, errors := New(suite.Entities, nil, suite.Version, suite.Migrations, suite.IdentityCalculator)
 	diff := deep.Equal(expected, got)
 
 	expectedError := fmt.Errorf("Need an ORM to work with")
@@ -92,7 +89,7 @@ func (suite *RoomConstructorTestSuite) TestNewWithMissingDBA() {
 func (suite *RoomConstructorTestSuite) TestNewWithBadVersion() {
 
 	var expected *Room
-	got, errors := New(suite.Entities, suite.Dba, 0, suite.Migrations, suite.FallbackToDestructiveMigration, suite.IdentityCalculator)
+	got, errors := New(suite.Entities, suite.Dba, 0, suite.Migrations, suite.IdentityCalculator)
 	diff := deep.Equal(expected, got)
 
 	expectedError := fmt.Errorf("Only non zero versions allowed")
@@ -105,7 +102,7 @@ func (suite *RoomConstructorTestSuite) TestNewWithBadVersion() {
 func (suite *RoomConstructorTestSuite) TestNewWithMissingIdentityCalculator() {
 
 	var expected *Room
-	got, errors := New(suite.Entities, suite.Dba, suite.Version, suite.Migrations, suite.FallbackToDestructiveMigration, nil)
+	got, errors := New(suite.Entities, suite.Dba, suite.Version, suite.Migrations, nil)
 	diff := deep.Equal(expected, got)
 
 	fmt.Printf("%v", suite)
@@ -145,12 +142,11 @@ func (s *RoomInitTestSuite) SetupTest() {
 	s.Migrations = []orm.Migration{}
 
 	s.AppDB = &Room{
-		entities:                       s.Entities,
-		dba:                            s.Dba,
-		version:                        s.Version,
-		migrations:                     s.Migrations,
-		fallbackToDestructiveMigration: s.FallbackToDestructiveMigration,
-		identityCalculator:             s.IdentityCalculator,
+		entities:           s.Entities,
+		dba:                s.Dba,
+		version:            s.Version,
+		migrations:         s.Migrations,
+		identityCalculator: s.IdentityCalculator,
 	}
 }
 
