@@ -2,8 +2,11 @@ package example
 
 import (
 	"fmt"
+	"os"
 	"testing"
 
+	groom "adonmo.com/goroom"
+	"adonmo.com/goroom/example/migrations"
 	"adonmo.com/goroom/example/models/latest"
 	"adonmo.com/goroom/example/models/old"
 	"adonmo.com/goroom/logger"
@@ -50,12 +53,74 @@ func TestIntegrationWithGORM(t *testing.T) {
 	}
 }
 
+func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entitiesForVersionsArr [][]interface{}) bool {
+
+	applicableMigrations := migrations.GetMigrations()
+
+	for srcIdx, oldEntities := range entitiesForVersionsArr {
+
+		dbFilePath := "test_goroom.db"
+		var err = os.Remove(dbFilePath)
+		if err != nil {
+			panic(err)
+		}
+
+		srcVersionNumber := orm.VersionNumber(srcIdx + 1)
+		db, gormAdapter := getDBAndGORMAdapter(dbFilePath)
+		identityCalculator := new(adapter.EntityHashConstructor)
+
+		appDB, errList := room.New(oldEntities, gormAdapter, srcVersionNumber, applicableMigrations, identityCalculator)
+		if len(errList) > 0 {
+			panic(errList)
+		}
+
+		err = groom.InitializeRoom(appDB, false)
+		if err != nil {
+			panic(fmt.Errorf("Error while init for Version %v", srcVersionNumber))
+		}
+		db.Close()
+
+		for i := srcIdx + 1; i < len(entitiesForVersionsArr); i++ {
+			currentVersionNumber := orm.VersionNumber(i + 1)
+			db, gormAdapter = getDBAndGORMAdapter(dbFilePath)
+			appDB, errList = room.New(entitiesForVersionsArr[i], gormAdapter, currentVersionNumber, applicableMigrations, identityCalculator)
+
+			if len(errList) > 0 {
+				panic(errList)
+			}
+
+			err = groom.InitializeRoom(appDB, false)
+			if err != nil {
+				panic(fmt.Errorf("Error while init for Version %v", currentVersionNumber))
+			}
+			db.Close()
+		}
+
+	}
+
+	return true
+}
+
+func getDBAndGORMAdapter(dbFilePath string) (*gorm.DB, orm.ORM) {
+	db, err := gorm.Open("sqlite3", dbFilePath)
+	if err != nil {
+		panic(err)
+	}
+
+	gormAdapter := adapter.NewGORM(db)
+	return db, gormAdapter
+}
+
 func verifyThatEntityHashesForAllVersionsAreDifferent(entitiesForVersionsArr [][]interface{}) bool {
 
 	db, err := gorm.Open("sqlite3", ":memory:")
 	if err != nil {
 		panic(err)
 	}
+
+	defer func() {
+		db.Close()
+	}()
 
 	identityToVersion := make(map[string]orm.VersionNumber)
 	gormAdapter := adapter.NewGORM(db)

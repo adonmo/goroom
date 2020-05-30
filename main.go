@@ -1,4 +1,4 @@
-package main
+package goroom
 
 import (
 	"adonmo.com/goroom/room"
