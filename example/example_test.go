@@ -51,6 +51,10 @@ func TestIntegrationWithGORM(t *testing.T) {
 	if !verifyThatEntityHashesForAllVersionsAreDifferent(entitiesForVersionsArr) {
 		t.Errorf("Hash Uniqueness check failed")
 	}
+
+	if !verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entitiesForVersionsArr) {
+		t.Errorf("Migration testing has failed")
+	}
 }
 
 func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entitiesForVersionsArr [][]interface{}) bool {
@@ -61,7 +65,8 @@ func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entities
 
 		dbFilePath := "test_goroom.db"
 		var err = os.Remove(dbFilePath)
-		if err != nil {
+		if err != nil && !os.IsNotExist(err) {
+			fmt.Print(err)
 			panic(err)
 		}
 
