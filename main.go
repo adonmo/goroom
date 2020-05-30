@@ -5,11 +5,11 @@ import (
 )
 
 //InitializeRoom Initialize Room
-func InitializeRoom(initializer room.Initializer, fallbackToDestructiveMigration bool) (errList []error) {
+func InitializeRoom(initializer room.Initializer, fallbackToDestructiveMigration bool) error {
 
 	identityHash, err := initializer.CalculateIdentityHash()
 	if err != nil {
-		return append(errList, err)
+		return err
 	}
 
 	shouldRetryAfterDestruction, err := initializer.Init(identityHash)
@@ -19,5 +19,5 @@ func InitializeRoom(initializer room.Initializer, fallbackToDestructiveMigration
 		}
 	}
 
-	return append(errList, err)
+	return err
 }
