@@ -169,20 +169,6 @@ func (s *RoomInitTestSuite) TestInitRoomDBForScenario1() {
 	assert.True(s.T(), !shouldRetry && err == nil, "No error expected here for Scenario 1")
 }
 
-func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInIdentityHashCalculation() {
-
-	someError := fmt.Errorf("Hash calculation failed")
-
-	s.MockORM.EXPECT().HasTable(GoRoomSchemaMaster{}).Return(false)
-	s.MockORM.EXPECT().GetModelDefinition(gomock.Any()).Return(orm.ModelDefinition{
-		EntityModel: MockEntityModel{},
-		TableName:   "asasa",
-	}).AnyTimes()
-	s.MockIdentityCalc.EXPECT().ConstructHash(gomock.Any()).Return("", someError).AnyTimes()
-
-	assert.NotNil(s.T(), s.AppDB.InitializeAppDB(), "Expected an Error for Scenario 1 Hash Problem")
-}
-
 func (s *RoomInitTestSuite) TestInitRoomDBForScenario1WithErrorInDBCreation() {
 
 	identityHash := "asasaasa"

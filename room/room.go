@@ -73,25 +73,6 @@ If the initialization fails for any reason in any of the three scenarios then we
 If enabled whole DB(Schema Master and known entities) is wiped out and init is retried
 */
 
-//InitializeAppDB Returns Database object to be used by the application
-func (appDB *Room) InitializeAppDB() error {
-	identityHash, err := appDB.CalculateIdentityHash()
-	if err != nil {
-		return err
-	}
-
-	shouldRetryAfterDestruction, err := appDB.Init(identityHash)
-	if err != nil && shouldRetryAfterDestruction {
-		dbCleanUpFunc := GetDBCleanUpFunction(append(appDB.entities, GoRoomSchemaMaster{}))
-		err = appDB.dba.DoInTransaction(dbCleanUpFunc)
-		if err == nil {
-			_, err = appDB.Init(identityHash)
-		}
-	}
-
-	return err
-}
-
 //Init Initialize Room Database
 func (appDB *Room) Init(currentIdentityHash string) (shouldRetryAfterDestruction bool, err error) {
 
