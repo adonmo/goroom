@@ -65,12 +65,14 @@ func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entities
 	for srcIdx, oldEntities := range entitiesForVersionsArr {
 
 		srcVersionNumber := orm.VersionNumber(srcIdx + 1)
-		prepareDBForMigrationTesting(dbFilePath, oldEntities, srcVersionNumber, applicableMigrations)
 
 		for i := srcIdx + 1; i < len(entitiesForVersionsArr); i++ {
 
-			//Create Room Object
 			currentVersionNumber := orm.VersionNumber(i + 1)
+			fmt.Printf("------- Migration(%v => %v) ------ \n", srcVersionNumber, currentVersionNumber)
+			prepareDBForMigrationTesting(dbFilePath, oldEntities, srcVersionNumber, applicableMigrations)
+
+			//Create Room Object
 			db, gormAdapter := getDBAndGORMAdapter(dbFilePath)
 			identityCalculator := new(adapter.EntityHashConstructor)
 			appDB, errList := room.New(entitiesForVersionsArr[i], gormAdapter, currentVersionNumber, applicableMigrations, identityCalculator)
@@ -97,6 +99,7 @@ func verifyThatMigrationWorksForEachCombinationOfSourceAndTargetVersion(entities
 		}
 
 		logger.Infof("Done with transition for %v\n", srcVersionNumber)
+		fmt.Println("####################################################")
 	}
 
 	return true
@@ -129,7 +132,6 @@ func prepareDBForMigrationTesting(dbFilePath string, entities []interface{}, src
 	}
 	logger.Infof("Base DB ready for version %v and has identity %v", version, identity)
 
-	fmt.Println()
 	if err != nil {
 		panic(fmt.Errorf("Error while init for Version %v", srcVersionNumber))
 	}
