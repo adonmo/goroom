@@ -13,7 +13,7 @@ data stored on the edge device is things like valuable insights/events recorded 
 server. Since data collection is a major use case of edge devices I think a version manager like Room is necessary.
 
 ### Android Room
-Room is inspired by its namesake in Android World which does the same thing but at a deeper level by even providing the ORM.
+Room is inspired by its [namesake](https://developer.android.com/training/data-storage/room) in Android World which does the same thing but at a deeper level by even providing the ORM.
 The Room presented here is agnostic to data stores and provides flexibility to the developer on how they [signal](https://github.com/gamble09/groom/blob/master/orm/orm.go#L31) and [handle schema changes](https://github.com/gamble09/groom/blob/master/orm/orm.go#L36).
 
 ### Gotchas
@@ -21,8 +21,10 @@ The Room presented here is agnostic to data stores and provides flexibility to t
 * A lot of power is still in the developers hands as they have the freedom to execute any operations on the DB themselves.
 * Doing stuff like deleting/updating Room's metadata tables is a big No-No :). Plz...
 
+### Sample
 For understanding on how the migration and versioning works check [examples](https://github.com/gamble09/groom/tree/master/example).  
 
+### How to Run Sample
 To run the example which also serves as an integration test with GORM run
 ```sh
 go test -v ./...
