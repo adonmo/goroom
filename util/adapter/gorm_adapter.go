@@ -1,10 +1,23 @@
 package adapter
 
 import (
+	"reflect"
+
 	"adonmo.com/goroom/orm"
 	"adonmo.com/goroom/room"
 	"github.com/jinzhu/gorm"
 )
+
+//GORMField Representation
+type GORMField struct {
+	Name string
+	Tag  reflect.StructTag
+}
+
+//GORMEntityModel Entity Model for GORM for Room
+type GORMEntityModel struct {
+	Fields []*GORMField
+}
 
 //GORMAdapter Adpater for GORM as used by Room
 type GORMAdapter struct {
@@ -54,9 +67,18 @@ func (adapter *GORMAdapter) DropTable(entities ...interface{}) orm.Result {
 //GetModelDefinition Get representation of a database table(entity) as done by ORM
 func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) orm.ModelDefinition {
 	model := adapter.db.NewScope(entity).GetModelStruct()
+	fields := []*GORMField{}
+	for _, f := range model.StructFields {
+		fields = append(fields, &GORMField{
+			Name: f.Name,
+			Tag:  f.Tag,
+		})
+	}
 	return orm.ModelDefinition{
-		EntityModel: model,
-		TableName:   model.TableName(adapter.db),
+		EntityModel: &GORMEntityModel{
+			Fields: fields,
+		},
+		TableName: model.TableName(adapter.db),
 	}
 }
 
