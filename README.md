@@ -25,7 +25,7 @@ The Room presented here is agnostic to data stores and provides flexibility to t
 For understanding on how the migration and versioning works check [examples](https://github.com/gamble09/groom/tree/master/example).  
 
 ### How to Run Sample
-To run the example which also serves as an integration test with GORM run
+To run the example which also serves as an integration test with GORM go to the examples folder and run
 ```sh
 go test -v ./...
 ```
