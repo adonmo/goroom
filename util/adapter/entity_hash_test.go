@@ -3,7 +3,7 @@ package adapter
 import (
 	"testing"
 
-	"adonmo.com/goroom/util/deephash"
+	"github.com/adonmo/goroom/util/deephash"
 	"github.com/go-test/deep"
 )
 

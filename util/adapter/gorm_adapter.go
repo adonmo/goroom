@@ -3,8 +3,8 @@ package adapter
 import (
 	"reflect"
 
-	"adonmo.com/goroom/orm"
-	"adonmo.com/goroom/room"
+	"github.com/adonmo/goroom/orm"
+	"github.com/adonmo/goroom/room"
 	"github.com/jinzhu/gorm"
 )
 

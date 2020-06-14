@@ -5,17 +5,17 @@ import (
 	"os"
 	"testing"
 
-	groom "adonmo.com/goroom"
-	"adonmo.com/goroom/example/migrations"
-	"adonmo.com/goroom/example/models/latest"
-	"adonmo.com/goroom/example/models/old"
-	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/orm"
-	"adonmo.com/goroom/room"
+	groom "github.com/adonmo/goroom"
+	"github.com/adonmo/goroom/example/migrations"
+	"github.com/adonmo/goroom/example/models/latest"
+	"github.com/adonmo/goroom/example/models/old"
+	"github.com/adonmo/goroom/logger"
+	"github.com/adonmo/goroom/orm"
+	"github.com/adonmo/goroom/room"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 
-	"adonmo.com/goroom/util/adapter"
+	"github.com/adonmo/goroom/util/adapter"
 )
 
 /* A sample to demonstrate the usage of go room

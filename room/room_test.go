@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"testing"
 
-	"adonmo.com/goroom/orm"
-	"adonmo.com/goroom/orm/mocks"
+	"github.com/adonmo/goroom/orm"
+	"github.com/adonmo/goroom/orm/mocks"
 	"github.com/go-test/deep"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"

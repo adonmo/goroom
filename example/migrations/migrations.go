@@ -3,10 +3,10 @@ package migrations
 import (
 	"fmt"
 
-	"adonmo.com/goroom/example/models/latest"
-	"adonmo.com/goroom/example/models/old"
-	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/orm"
+	"github.com/adonmo/goroom/example/models/latest"
+	"github.com/adonmo/goroom/example/models/old"
+	"github.com/adonmo/goroom/logger"
+	"github.com/adonmo/goroom/orm"
 	"github.com/jinzhu/gorm"
 )
 

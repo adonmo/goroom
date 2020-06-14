@@ -3,8 +3,8 @@ package room
 import (
 	"fmt"
 
-	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/orm"
+	"github.com/adonmo/goroom/logger"
+	"github.com/adonmo/goroom/orm"
 )
 
 func getFirstTimeDBCreationFunction(identityHash string, version orm.VersionNumber, entitiesToCreate []interface{}) func(orm.ORM) error {

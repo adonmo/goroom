@@ -5,7 +5,7 @@
 package mocks
 
 import (
-	orm "adonmo.com/goroom/orm"
+	orm "github.com/adonmo/goroom/orm"
 	gomock "github.com/golang/mock/gomock"
 	reflect "reflect"
 )

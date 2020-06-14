@@ -3,8 +3,8 @@ package adapter
 import (
 	"testing"
 
-	"adonmo.com/goroom/orm"
-	"adonmo.com/goroom/room"
+	"github.com/adonmo/goroom/orm"
+	"github.com/adonmo/goroom/room"
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"

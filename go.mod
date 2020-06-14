@@ -1,4 +1,4 @@
-module adonmo.com/goroom
+module github.com/adonmo/goroom
 
 go 1.14
 

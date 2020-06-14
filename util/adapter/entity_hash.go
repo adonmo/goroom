@@ -1,7 +1,7 @@
 package adapter
 
 import (
-	"adonmo.com/goroom/util/deephash"
+	"github.com/adonmo/goroom/util/deephash"
 )
 
 //EntityHashConstructor Constructs entity Hash for a given ORM Model description

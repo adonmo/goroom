@@ -1,8 +1,8 @@
 package room
 
 import (
-	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/orm"
+	"github.com/adonmo/goroom/logger"
+	"github.com/adonmo/goroom/orm"
 )
 
 //GoRoomSchemaMaster Tracks the schema of entities against current version of DB

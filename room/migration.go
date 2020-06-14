@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"sort"
 
-	"adonmo.com/goroom/logger"
-	"adonmo.com/goroom/orm"
+	"github.com/adonmo/goroom/logger"
+	"github.com/adonmo/goroom/orm"
 )
 
 //GetApplicableMigrations Fetches applicable migrations based on src and destination version numbers

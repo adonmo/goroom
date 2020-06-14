@@ -1,7 +1,7 @@
 package goroom
 
 import (
-	"adonmo.com/goroom/room"
+	"github.com/adonmo/goroom/room"
 )
 
 //InitializeRoom Initialize Room
