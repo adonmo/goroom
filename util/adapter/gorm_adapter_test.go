@@ -8,6 +8,7 @@ import (
 	"github.com/go-test/deep"
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -154,6 +155,12 @@ func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	if diff != nil {
 		suite.T().Errorf("GetModelDefinition not wokring as expected. %v", diff)
 	}
+}
+
+func (suite *IntegrationTestSuite) TestGetModelDefinitionWithBadInput() {
+
+	assert.True(suite.T(), suite.Adapter.GetModelDefinition(nil) == orm.ModelDefinition{})
+	assert.True(suite.T(), suite.Adapter.GetModelDefinition([]string{"abc"}) == orm.ModelDefinition{})
 }
 
 func (suite *IntegrationTestSuite) TestGetUnderlyingORM() {
