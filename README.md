@@ -1,9 +1,7 @@
 # goroom
 
 ### Brief
-The primary function of Room is to ease version management and migration of embedded Data Stores.
-Embedded Data Stores are databases that are created by apps on the edge devices and are tightly coupled with the
-version of app that creates and manages them.
+The primary function of Room is to ease version management and migration of databases that are created by apps on the edge devices and are tightly coupled with the version of app that creates and manages them.
 
 ### Features
 * Using Room a developer can ensure that as they deliver updates to App and underlying associated Data Store they can
