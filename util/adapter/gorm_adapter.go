@@ -1,7 +1,6 @@
 package adapter
 
 import (
-	"fmt"
 	"reflect"
 
 	"go/ast"
@@ -74,6 +73,10 @@ func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) (modelDefinit
 	}
 
 	reflectType := reflect.ValueOf(entity).Type()
+	for reflectType.Kind() == reflect.Ptr {
+		reflectType = reflectType.Elem()
+	}
+
 	if reflectType.Kind() != reflect.Struct {
 		return
 	}
@@ -82,10 +85,6 @@ func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) (modelDefinit
 	for i := 0; i < reflectType.NumField(); i++ {
 		if fieldStruct := reflectType.Field(i); ast.IsExported(fieldStruct.Name) {
 			fields = append(fields, &GORMField{
-				Name: fieldStruct.Name + ":" + fieldStruct.Type.Name(),
-				Tag:  fieldStruct.Tag,
-			})
-			fmt.Println(GORMField{
 				Name: fieldStruct.Name + ":" + fieldStruct.Type.Name(),
 				Tag:  fieldStruct.Tag,
 			})

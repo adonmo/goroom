@@ -155,6 +155,9 @@ func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	if diff != nil {
 		suite.T().Errorf("GetModelDefinition not wokring as expected. %v", diff)
 	}
+
+	//Same test when model is passed in as a reference
+	assert.Equal(suite.T(), suite.Adapter.GetModelDefinition(&DummyTable{}), expectedOutput)
 }
 
 func (suite *IntegrationTestSuite) TestGetModelDefinitionWithBadInput() {
