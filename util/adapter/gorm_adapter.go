@@ -1,7 +1,10 @@
 package adapter
 
 import (
+	"fmt"
 	"reflect"
+
+	"go/ast"
 
 	"github.com/adonmo/goroom/orm"
 	"github.com/adonmo/goroom/room"
@@ -65,15 +68,31 @@ func (adapter *GORMAdapter) DropTable(entities ...interface{}) orm.Result {
 }
 
 //GetModelDefinition Get representation of a database table(entity) as done by ORM
-func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) orm.ModelDefinition {
-	model := adapter.db.NewScope(entity).GetModelStruct()
-	fields := []*GORMField{}
-	for _, f := range model.StructFields {
-		fields = append(fields, &GORMField{
-			Name: f.Name,
-			Tag:  f.Tag,
-		})
+func (adapter *GORMAdapter) GetModelDefinition(entity interface{}) (modelDefinition orm.ModelDefinition) {
+	if entity == nil {
+		return
 	}
+
+	reflectType := reflect.ValueOf(entity).Type()
+	if reflectType.Kind() != reflect.Struct {
+		return
+	}
+
+	fields := make([]*GORMField, 0, reflectType.NumField())
+	for i := 0; i < reflectType.NumField(); i++ {
+		if fieldStruct := reflectType.Field(i); ast.IsExported(fieldStruct.Name) {
+			fields = append(fields, &GORMField{
+				Name: fieldStruct.Name + ":" + fieldStruct.Type.Name(),
+				Tag:  fieldStruct.Tag,
+			})
+			fmt.Println(GORMField{
+				Name: fieldStruct.Name + ":" + fieldStruct.Type.Name(),
+				Tag:  fieldStruct.Tag,
+			})
+		}
+	}
+
+	model := adapter.db.NewScope(entity).GetModelStruct()
 	return orm.ModelDefinition{
 		EntityModel: &GORMEntityModel{
 			Fields: fields,

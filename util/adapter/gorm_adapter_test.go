@@ -134,12 +134,12 @@ func (suite *IntegrationTestSuite) TestDropTable() {
 func (suite *IntegrationTestSuite) TestGetModelDefinition() {
 	expectedModel := suite.DB.NewScope(DummyTable{}).GetModelStruct()
 	fields := []*GORMField{}
-	for _, f := range expectedModel.StructFields {
-		fields = append(fields, &GORMField{
-			Name: f.Name,
-			Tag:  f.Tag,
-		})
-	}
+	fields = append(fields, &GORMField{
+		Name: "ID:int",
+		Tag:  `gorm:"primary_key"`,
+	}, &GORMField{
+		Name: "Value:string",
+	})
 
 	expectedOutput := orm.ModelDefinition{
 		EntityModel: &GORMEntityModel{
