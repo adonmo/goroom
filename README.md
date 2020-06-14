@@ -1,4 +1,4 @@
-# groom
+# go-room
 
 ### Brief
 The primary function of Room is to ease version management and migration of embedded Data Stores.
