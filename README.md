@@ -1,5 +1,8 @@
 # goroom
 
+### Blog
+* For a primer on Go-Room, refer to the blog on [Basic Usage](https://medium.com/adonmo-tech/go-room-5c1d4f46a77e)
+
 ### Brief
 The primary function of Room is to ease version management and migration of databases that are created by apps on the edge devices and are tightly coupled with the version of app that creates and manages them.
 
